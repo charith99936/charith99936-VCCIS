@@ -799,6 +799,7 @@ export default function App() {
   const [mounted, setMounted] = useState(false);
   const [linkedIn, setLinkedIn] = useState(null); // LinkedIn profile state
   const [jobExpand, setJobExpand] = useState(null); // expanded job id
+  const [roleExpand, setRoleExpand] = useState(null); // expanded role id
   const [liModal, setLiModal] = useState(false);
   const [liEmail2, setLiEmail2] = useState("");
   const [liPhase2, setLiPhase2] = useState("idle");
@@ -999,48 +1000,113 @@ export default function App() {
               <>
                 <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.green, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>✓ Strong Matches</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(340px,1fr))", gap: 10, marginBottom: "2rem" }}>
-                  {strong.map((role, i) => (
-                    <div key={role.id} className="rc" style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "1.25rem", animation: `fadeUp .25s ease ${i * .05}s both` }}>
-                      <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "flex-start" }}>
-                        <div style={{ width: 44, height: 44, borderRadius: 10, background: `${role.color}15`, border: `1px solid ${role.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: role.color, flexShrink: 0 }}>{role.symbol}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: T.text, letterSpacing: "-0.02em" }}>{role.title}</div>
-                          <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{role.salary} · {role.demand} demand</div>
+                  {strong.map((role, i) => {
+                    const expanded = roleExpand === role.id;
+                    const bonusMissing = role.bonus.filter(b => !selected[b]).map(b => COURSES.find(x => x.code === b)?.name).filter(Boolean);
+                    return (
+                      <div key={role.id} className="rc" style={{ background: T.bg, border: `1px solid ${expanded ? role.color + "60" : T.border}`, borderRadius: 8, overflow: "hidden", animation: `fadeUp .25s ease ${i * .05}s both`, transition: "border-color .15s" }}>
+                        <div onClick={() => setRoleExpand(expanded ? null : role.id)} style={{ padding: "1.25rem", cursor: "pointer" }}>
+                          <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "flex-start" }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, background: `${role.color}15`, border: `1px solid ${role.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: role.color, flexShrink: 0 }}>{role.symbol}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 700, fontSize: 15, color: T.text, letterSpacing: "-0.02em" }}>{role.title}</div>
+                              <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{role.salary} · {role.demand} demand</div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ fontWeight: 800, fontSize: 28, color: role.color, letterSpacing: "-0.04em" }}>{role.score}%</div>
+                              <span style={{ fontSize: 14, color: T.textMuted, transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
+                            </div>
+                          </div>
+                          <p style={{ fontSize: 12.5, color: T.textSub, lineHeight: 1.6, marginBottom: 10 }}>{role.description}</p>
+                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                            {role.skills.map(s => <span key={s} style={{ fontSize: 10.5, padding: "2px 8px", borderRadius: 3, background: T.surface2, color: T.textSub, border: `1px solid ${T.border}` }}>{s}</span>)}
+                          </div>
                         </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontWeight: 800, fontSize: 28, color: role.color, letterSpacing: "-0.04em" }}>{role.score}%</div>
-                        </div>
+                        {expanded && (
+                          <div style={{ borderTop: `1px solid ${T.border}`, padding: "1rem 1.25rem", background: T.surface }}>
+                            <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.green, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8, fontWeight: 600 }}>✓ Required courses — all covered</div>
+                            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: bonusMissing.length > 0 ? 14 : 0 }}>
+                              {role.required.map(code => {
+                                const course = COURSES.find(x => x.code === code);
+                                return <span key={code} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4, background: T.greenSoft, color: T.green, border: `1px solid ${T.greenBorder}`, fontWeight: 500 }}>✓ {course?.name || code}</span>;
+                              })}
+                            </div>
+                            {bonusMissing.length > 0 && (
+                              <>
+                                <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.accent, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8, fontWeight: 600, marginTop: 4 }}>+ Add these to boost your score</div>
+                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                                  {bonusMissing.map(name => <span key={name} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4, background: T.accentSoft, color: T.accent, border: `1px solid ${T.accentBorder}`, fontWeight: 500 }}>+ {name}</span>)}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <p style={{ fontSize: 12.5, color: T.textSub, lineHeight: 1.6, marginBottom: 10 }}>{role.description}</p>
-                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                        {role.skills.map(s => <span key={s} style={{ fontSize: 10.5, padding: "2px 8px", borderRadius: 3, background: T.surface2, color: T.textSub, border: `1px solid ${T.border}` }}>{s}</span>)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}
             {eligible.length > 0 && (
               <>
-                <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.amber, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>◎ Close Matches</div>
+                <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.amber, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>◎ Within Reach</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(340px,1fr))", gap: 10 }}>
-                  {eligible.map((role, i) => (
-                    <div key={role.id} className="rc" style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "1.25rem", animation: `fadeUp .25s ease ${i * .05}s both`, opacity: 0.85 }}>
-                      <div style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "flex-start" }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 8, background: `${role.color}10`, border: `1px solid ${role.color}25`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: role.color, flexShrink: 0 }}>{role.symbol}</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: T.text }}>{role.title}</div>
-                          <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{role.salary}</div>
+                  {eligible.map((role, i) => {
+                    const expanded = roleExpand === role.id;
+                    const missingRequired = gaps[role.id]?.missing || [];
+                    const missingBonus = gaps[role.id]?.bonus || [];
+                    return (
+                      <div key={role.id} className="rc" style={{ background: T.bg, border: `1px solid ${expanded ? T.amberBorder : T.border}`, borderRadius: 8, overflow: "hidden", animation: `fadeUp .25s ease ${i * .05}s both`, transition: "border-color .15s" }}>
+                        <div onClick={() => setRoleExpand(expanded ? null : role.id)} style={{ padding: "1.25rem", cursor: "pointer" }}>
+                          <div style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "flex-start" }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 8, background: `${role.color}10`, border: `1px solid ${role.color}25`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: role.color, flexShrink: 0 }}>{role.symbol}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 600, fontSize: 14, color: T.text }}>{role.title}</div>
+                              <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{role.salary} · {role.demand} demand</div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ fontWeight: 800, fontSize: 22, color: T.amber }}>{role.score}%</div>
+                              <span style={{ fontSize: 14, color: T.textMuted, transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 11, color: T.amber, background: T.amberSoft, border: `1px solid ${T.amberBorder}`, borderRadius: 4, padding: "5px 10px" }}>
+                            {missingRequired.length > 0 ? `Missing ${missingRequired.length} required course${missingRequired.length > 1 ? "s" : ""} — click to see` : "All required courses done — click for details"}
+                          </div>
                         </div>
-                        <div style={{ fontWeight: 800, fontSize: 22, color: T.amber }}>{role.score}%</div>
+                        {expanded && (
+                          <div style={{ borderTop: `1px solid ${T.border}`, padding: "1rem 1.25rem", background: T.surface }}>
+                            {missingRequired.length > 0 && (
+                              <>
+                                <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.red, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8, fontWeight: 600 }}>✗ Missing required — add these first</div>
+                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 14 }}>
+                                  {missingRequired.map(name => <span key={name} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4, background: "#FEF2F2", color: T.red, border: "1px solid #FECACA", fontWeight: 500 }}>✗ {name}</span>)}
+                                </div>
+                              </>
+                            )}
+                            {role.required.filter(c => selected[c]).length > 0 && (
+                              <>
+                                <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.green, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8, fontWeight: 600 }}>✓ Already have</div>
+                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: missingBonus.length > 0 ? 14 : 0 }}>
+                                  {role.required.filter(c => selected[c]).map(code => {
+                                    const course = COURSES.find(x => x.code === code);
+                                    return <span key={code} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4, background: T.greenSoft, color: T.green, border: `1px solid ${T.greenBorder}`, fontWeight: 500 }}>✓ {course?.name || code}</span>;
+                                  })}
+                                </div>
+                              </>
+                            )}
+                            {missingBonus.length > 0 && (
+                              <>
+                                <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.accent, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8, fontWeight: 600 }}>+ Also recommended</div>
+                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                                  {missingBonus.map(name => <span key={name} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4, background: T.accentSoft, color: T.accent, border: `1px solid ${T.accentBorder}`, fontWeight: 500 }}>+ {name}</span>)}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {gaps[role.id]?.missing?.length > 0 && (
-                        <div style={{ fontSize: 11, color: T.amber, background: T.amberSoft, border: `1px solid ${T.amberBorder}`, borderRadius: 4, padding: "6px 10px" }}>
-                          Missing: {gaps[role.id].missing.join(", ")}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}
