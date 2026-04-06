@@ -3,15 +3,1262 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VCCIS</title>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <title>VCCIS — Course to Career</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #fff; }</style>
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" src="./VCCIS.jsx"></script>
   <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef, useCallback } = React;
+
+
+/* ─────────────────────────── DATA ─────────────────────────── */
+const COURSES = [
+  { code:"BCSE101E", name:"Computer Programming: Python",             category:"Programming" },
+  { code:"BCSE103E", name:"Computer Programming: Java",               category:"Programming" },
+  { code:"BCSE102L", name:"Structured & Object-Oriented Programming", category:"Programming" },
+  { code:"BCSE203E", name:"Web Programming",                          category:"Programming" },
+  { code:"BCSE301L", name:"Software Engineering",                     category:"Programming" },
+  { code:"BCSE202L", name:"Data Structures and Algorithms",           category:"DSA" },
+  { code:"BCSE204L", name:"Design and Analysis of Algorithms",        category:"DSA" },
+  { code:"BCSE205L", name:"Computer Architecture & Organization",     category:"Systems" },
+  { code:"BCSE303L", name:"Operating Systems",                        category:"Systems" },
+  { code:"BCSE308L", name:"Computer Networks",                        category:"Systems" },
+  { code:"BCSE304L", name:"Theory of Computation",                    category:"Theory" },
+  { code:"BCSE307L", name:"Compiler Design",                          category:"Theory" },
+  { code:"BCSE302L", name:"Database Systems",                         category:"Data" },
+  { code:"BCSE306L", name:"Artificial Intelligence",                  category:"Data" },
+  { code:"BMAT101L", name:"Calculus",                                 category:"Mathematics" },
+  { code:"BMAT102L", name:"Differential Equations and Transforms",    category:"Mathematics" },
+  { code:"BMAT201L", name:"Complex Variables & Linear Algebra",       category:"Mathematics" },
+  { code:"BMAT202L", name:"Probability and Statistics",               category:"Mathematics" },
+  { code:"BMAT205L", name:"Discrete Mathematics & Graph Theory",      category:"Mathematics" },
+  { code:"BCSE310L", name:"IoT Architectures and Protocols",          category:"Emerging" },
+  { code:"BCSE312L", name:"Programming for IoT Boards",               category:"Emerging" },
+  { code:"BCSE313L", name:"Fundamentals of Fog & Edge Computing",     category:"Emerging" },
+  { code:"BCSE314L", name:"Privacy and Security in IoT",              category:"Emerging" },
+  { code:"BCSE315L", name:"Wearable Computing",                       category:"Emerging" },
+  { code:"BCSE309L", name:"Cryptography & Network Security",          category:"Security" },
+  { code:"BCSE355L", name:"AWS Solutions Architect",                  category:"Cloud" },
+];
+
+const COURSE_SKILLS = {
+  BCSE101E:["Python","Scripting","Automation"], BCSE103E:["Java","OOP","JVM Internals"],
+  BCSE102L:["OOP","C / C++","Procedural Design"], BCSE203E:["HTML & CSS","JavaScript","Web Dev","REST APIs"],
+  BCSE301L:["SDLC","System Design","Agile","Architecture"], BCSE202L:["Data Structures","Problem Solving","Algorithmic Thinking"],
+  BCSE204L:["Algorithm Design","Complexity Analysis","Optimization"], BCSE205L:["Computer Architecture","Low-level Systems","Assembly"],
+  BCSE303L:["Operating Systems","Process Management","Memory Mgmt","Linux"], BCSE308L:["Networking","TCP/IP","Protocols","Network Design"],
+  BCSE304L:["Automata Theory","Formal Languages","Complexity"], BCSE307L:["Compiler Design","Parsing","Language Processing"],
+  BCSE302L:["SQL","Database Design","DBMS","Query Optimization"], BCSE306L:["AI Algorithms","Knowledge Representation","Logic"],
+  BMAT101L:["Calculus","Mathematical Foundations"], BMAT102L:["Differential Equations","Signal Processing"],
+  BMAT201L:["Linear Algebra","Matrix Operations","Vector Spaces"], BMAT202L:["Statistics","Probability","Data Analysis"],
+  BMAT205L:["Discrete Math","Graph Theory","Combinatorics"], BCSE310L:["IoT","Embedded Systems","Sensor Networks"],
+  BCSE312L:["Embedded Programming","Microcontrollers","Hardware"], BCSE313L:["Edge Computing","Fog Computing","Distributed Systems"],
+  BCSE314L:["IoT Security","Privacy Engineering"], BCSE315L:["Wearable Tech","HCI","Sensor Fusion"],
+  BCSE309L:["Cryptography","Network Security","Secure Protocols"], BCSE355L:["AWS","Cloud Computing","Cloud Architecture","DevOps"],
+};
+
+const ROLES = [
+  { id:"swe",     title:"Software Engineer",      symbol:"{}",  color:"#9B72CF", required:["BCSE202L","BCSE303L","BCSE302L"], bonus:["BCSE101E","BCSE103E","BCSE204L","BCSE301L"], description:"Design, build and maintain software systems at scale.",           skills:["Data Structures","Operating Systems","SQL","Problem Solving"], salary:"₹8L – ₹30L",  demand:"Very High" },
+  { id:"fsd",     title:"Full Stack Developer",   symbol:"⬡",   color:"#B48AE0", required:["BCSE203E","BCSE301L"],            bonus:["BCSE101E","BCSE103E","BCSE302L"],            description:"Build complete web applications from UI to database.",            skills:["HTML/CSS","JavaScript","REST APIs","SDLC"],                     salary:"₹6L – ₹25L",  demand:"High"      },
+  { id:"backend", title:"Backend Developer",      symbol:"⟳",   color:"#8B6FC4", required:["BCSE302L","BCSE202L"],            bonus:["BCSE101E","BCSE103E","BCSE303L","BCSE301L"], description:"Architect and build server-side systems and APIs.",                skills:["SQL","Data Structures","API Design","Linux"],                  salary:"₹7L – ₹28L",  demand:"Very High" },
+  { id:"ml",      title:"ML / AI Engineer",       symbol:"◈",   color:"#C49DE8", required:["BCSE306L","BMAT202L","BMAT201L"], bonus:["BCSE101E","BCSE302L","BCSE202L","BMAT205L"], description:"Build intelligent systems and machine learning pipelines.",        skills:["AI Algorithms","Statistics","Linear Algebra","Python"],        salary:"₹10L – ₹40L", demand:"Very High" },
+  { id:"ds",      title:"Data Scientist",         symbol:"∿",   color:"#A87ED6", required:["BMAT202L","BCSE302L","BCSE306L"], bonus:["BCSE101E","BMAT201L","BMAT205L"],            description:"Extract insights from large datasets using statistical models.",   skills:["Statistics","SQL","Python","Data Analysis"],                   salary:"₹8L – ₹35L",  demand:"High"      },
+  { id:"cyber",   title:"Cybersecurity Engineer", symbol:"⬢",   color:"#7B5FBF", required:["BCSE308L","BCSE309L"],            bonus:["BCSE303L","BCSE314L","BCSE205L"],             description:"Protect systems and networks from security threats.",             skills:["Networking","Cryptography","Linux","Secure Protocols"],        salary:"₹8L – ₹30L",  demand:"High"      },
+  { id:"cloud",   title:"Cloud Engineer",         symbol:"⌁",   color:"#9D80D4", required:["BCSE355L","BCSE308L"],            bonus:["BCSE303L","BCSE313L","BCSE301L"],            description:"Design and manage scalable cloud infrastructure.",                skills:["AWS","Networking","Linux","DevOps"],                           salary:"₹10L – ₹35L", demand:"Very High" },
+  { id:"iot",     title:"IoT Engineer",           symbol:"⌘",   color:"#B09BD9", required:["BCSE310L","BCSE312L"],            bonus:["BCSE313L","BCSE314L","BCSE303L"],            description:"Build connected device ecosystems and embedded systems.",         skills:["IoT","Embedded Programming","Sensor Networks"],                salary:"₹6L – ₹22L",  demand:"Medium"    },
+  { id:"cp",      title:"Competitive Programmer", symbol:"Σ",   color:"#8A68C8", required:["BCSE202L","BCSE204L"],            bonus:["BMAT205L","BCSE304L","BCSE101E"],            description:"Solve complex algorithmic challenges competitively.",             skills:["Data Structures","Algorithms","Discrete Math"],                salary:"₹12L – ₹45L", demand:"Medium"    },
+  { id:"devops",  title:"DevOps Engineer",        symbol:"↻",   color:"#A991DC", required:["BCSE355L","BCSE303L"],            bonus:["BCSE308L","BCSE301L","BCSE309L"],            description:"Bridge development and operations through automation and CI/CD.",  skills:["AWS","Linux","Networking","SDLC"],                            salary:"₹9L – ₹32L",  demand:"Very High" },
+  { id:"sysdev",  title:"Systems Programmer",     symbol:"▣",   color:"#8578C0", required:["BCSE303L","BCSE205L"],            bonus:["BCSE308L","BCSE102L","BCSE307L"],            description:"Develop low-level systems, kernels, and embedded software.",      skills:["OS","Architecture","C/C++","Memory"],                          salary:"₹9L – ₹32L",  demand:"Medium"    },
+  { id:"dba",     title:"Database Administrator", symbol:"⊞",   color:"#C5A8E8", required:["BCSE302L"],                       bonus:["BCSE303L","BCSE308L"],                       description:"Manage, optimize, and secure enterprise database systems.",      skills:["SQL","Query Optimization","DBMS","Linux"],                     salary:"₹5L – ₹20L",  demand:"Medium"    },
+];
+
+const JOBS = [
+  /* ── India ── */
+  { id:1,  title:"Software Development Engineer",  company:"Amazon",        location:"Hyderabad",  type:"Full-time",  roles:["swe","backend"],   posted:"2 days ago",  logo:"A",   color:"#FF9900", tc:"₹24–38 LPA",   region:"India",
+    description:"Own end-to-end features on Amazon's retail platform. Work with Java/Python microservices, distributed systems, and high-traffic APIs at scale.",
+    skills:["Java","Python","System Design","Data Structures","AWS"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Software+Development+Engineer+Amazon",
+    whatToDo:["Strengthen DSA on LeetCode (150+ problems)","Build a system-design portfolio project","Get AWS Cloud Practitioner certified","Apply via Amazon Jobs portal or LinkedIn"] },
+  { id:2,  title:"Machine Learning Engineer",      company:"Google",         location:"Bangalore",  type:"Full-time",  roles:["ml","ds"],         posted:"1 day ago",   logo:"G",   color:"#4285F4", tc:"₹30–50 LPA",   region:"India",
+    description:"Design and ship ML models powering Google Search and Ads. Collaborate with research teams and scale models to billions of users.",
+    skills:["Python","TensorFlow","Statistics","ML Pipelines","Distributed Computing"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Machine+Learning+Engineer+Google",
+    whatToDo:["Master ML fundamentals (Andrew Ng's Coursera)","Contribute to open-source ML projects","Build and deploy end-to-end ML projects","Apply via Google Careers"] },
+  { id:3,  title:"Full Stack Developer Intern",    company:"Flipkart",       location:"Bangalore",  type:"Internship", roles:["fsd","backend"],   posted:"3 days ago",  logo:"F",   color:"#2874F0", tc:"₹60–80K/mo",   region:"India",
+    description:"Build features for Flipkart's e-commerce platform. Work with React, Node.js, and microservices. 6-month internship with PPO potential.",
+    skills:["React","Node.js","REST APIs","SQL","JavaScript"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Full+Stack+Developer+Intern+Flipkart",
+    whatToDo:["Build a full-stack project (React + Node + MongoDB)","Get comfortable with REST APIs","Prepare for coding rounds on HackerEarth","Apply via Flipkart Careers"] },
+  { id:4,  title:"Cloud Infrastructure Engineer",  company:"Microsoft",      location:"Hyderabad",  type:"Full-time",  roles:["cloud","devops"],  posted:"5 hours ago", logo:"M",   color:"#00A4EF", tc:"₹28–44 LPA",   region:"India",
+    description:"Design and maintain Azure cloud infrastructure. Automate deployments with Terraform, monitor with Datadog, and ensure 99.99% uptime SLAs.",
+    skills:["Azure","Terraform","Linux","Docker","Kubernetes"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Cloud+Infrastructure+Engineer+Microsoft",
+    whatToDo:["Get AZ-900 and AZ-104 Azure certifications","Learn Terraform and Docker hands-on","Contribute to open-source DevOps tools","Apply via Microsoft Careers or LinkedIn"] },
+  { id:5,  title:"Cybersecurity Analyst",          company:"Wipro",          location:"Pune",       type:"Full-time",  roles:["cyber"],           posted:"1 day ago",   logo:"W",   color:"#6B21A8", tc:"₹10–18 LPA",   region:"India",
+    description:"Monitor SIEM dashboards, investigate alerts, and perform vulnerability assessments. Work with SOC team on incident response and threat intelligence.",
+    skills:["SIEM","Network Security","Linux","Vulnerability Assessment","OWASP"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Cybersecurity+Analyst+Wipro",
+    whatToDo:["Get CompTIA Security+ certified","Practice on TryHackMe or HackTheBox","Learn Splunk/QRadar basics","Apply via Wipro Careers"] },
+  { id:6,  title:"Data Scientist",                 company:"Walmart Labs",   location:"Chennai",    type:"Full-time",  roles:["ds","ml"],         posted:"4 days ago",  logo:"WL",  color:"#0071CE", tc:"₹20–35 LPA",   region:"India",
+    description:"Analyse petabytes of retail data to drive supply chain and pricing decisions. Build dashboards in Tableau and predictive models in Python.",
+    skills:["Python","SQL","Statistics","Tableau","Scikit-learn"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Data+Scientist+Walmart+Labs",
+    whatToDo:["Complete a data science Kaggle competition","Build an analytics portfolio on GitHub","Learn SQL window functions in depth","Apply via Walmart Global Tech Careers"] },
+  { id:7,  title:"Backend Developer Intern",       company:"Razorpay",       location:"Bangalore",  type:"Internship", roles:["backend","swe"],   posted:"6 hours ago", logo:"R",   color:"#2EB7E5", tc:"₹70–90K/mo",   region:"India",
+    description:"Contribute to payment gateway APIs processing millions of transactions daily. Work with Go/Java services, Kafka, and Redis.",
+    skills:["Java or Go","Kafka","Redis","REST APIs","MySQL"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Backend+Developer+Intern+Razorpay",
+    whatToDo:["Build a backend project with queuing (RabbitMQ/Kafka)","Understand database transactions and ACID","Practice system design basics","Apply via Razorpay Careers"] },
+  { id:8,  title:"IoT Solutions Engineer",         company:"Bosch",          location:"Coimbatore", type:"Full-time",  roles:["iot"],             posted:"2 days ago",  logo:"B",   color:"#E20015", tc:"₹8–15 LPA",    region:"India",
+    description:"Develop firmware and cloud connectivity for smart factory sensors. Work with MQTT, AWS IoT Core, and embedded C on ARM Cortex-M devices.",
+    skills:["Embedded C","MQTT","AWS IoT","ARM Cortex","Python"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=IoT+Engineer+Bosch+India",
+    whatToDo:["Build an Arduino/Raspberry Pi project","Learn MQTT and cloud IoT services","Get hands-on with FreeRTOS","Apply via Bosch Careers India"] },
+  { id:9,  title:"DevOps Engineer",                company:"Infosys",        location:"Hyderabad",  type:"Full-time",  roles:["devops","cloud"],  posted:"3 days ago",  logo:"I",   color:"#007CC3", tc:"₹12–22 LPA",   region:"India",
+    description:"Build and maintain CI/CD pipelines for enterprise clients. Manage Kubernetes clusters, write Ansible playbooks, and automate infra with Jenkins.",
+    skills:["Jenkins","Kubernetes","Ansible","Docker","Linux"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=DevOps+Engineer+Infosys",
+    whatToDo:["Complete Docker + Kubernetes Udemy course","Set up a personal CI/CD pipeline on GitHub Actions","Get CKA (Certified Kubernetes Administrator)","Apply via Infosys Careers"] },
+  { id:10, title:"SDE Intern – Algorithms",        company:"Goldman Sachs",  location:"Bangalore",  type:"Internship", roles:["swe","cp"],        posted:"1 day ago",   logo:"GS",  color:"#5B4FCF", tc:"₹80–100K/mo",  region:"India",
+    description:"Solve performance-critical algorithmic problems in trading systems. Work with quant teams on optimisation and data pipelines in C++ and Python.",
+    skills:["C++","Python","Algorithms","Optimisation","Data Structures"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=SDE+Intern+Goldman+Sachs",
+    whatToDo:["Reach 300+ LeetCode problems (focus on hard)","Learn basic quantitative finance concepts","Practice competitive programming on Codeforces","Apply via Goldman Sachs campus programme"] },
+  { id:11, title:"AI Research Intern",             company:"Samsung R&D",    location:"Noida",      type:"Internship", roles:["ml","ds"],         posted:"5 days ago",  logo:"S",   color:"#1428A0", tc:"₹50–70K/mo",   region:"India",
+    description:"Conduct research on on-device AI for Galaxy devices. Work on model compression, quantisation, and edge inference with TensorFlow Lite.",
+    skills:["Python","TensorFlow Lite","Model Pruning","Computer Vision"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=AI+Research+Intern+Samsung",
+    whatToDo:["Read recent papers on model compression (NeurIPS/ICML)","Build a TFLite project on Raspberry Pi","Publish a small research note / blog","Apply via Samsung SRIV careers page"] },
+  { id:12, title:"Network Security Engineer",      company:"Cisco",          location:"Bangalore",  type:"Full-time",  roles:["cyber","cloud"],   posted:"2 days ago",  logo:"C",   color:"#049FD9", tc:"₹18–30 LPA",   region:"India",
+    description:"Design secure network architectures for enterprise clients. Specialise in firewalls (Firepower), VPN, and Zero Trust implementation.",
+    skills:["Cisco Firepower","CCNA","VPN","Zero Trust","Network Protocols"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Network+Security+Engineer+Cisco",
+    whatToDo:["Get CCNA certified","Set up a home lab with Cisco Packet Tracer","Learn SASE and Zero Trust principles","Apply via Cisco Careers"] },
+
+  /* ── UK ── */
+  { id:13, title:"Graduate Software Engineer",     company:"BBC",            location:"London, UK", type:"Full-time",  roles:["swe","fsd"],       posted:"3 days ago",  logo:"BBC", color:"#FF2B2B", tc:"£35–45K/yr",    region:"UK",
+    description:"Build and maintain backend services powering BBC iPlayer and BBC Sounds, serving 35M+ monthly users. Work with Python, React and AWS in an Agile team.",
+    skills:["Python","React","AWS","Agile","REST APIs"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Graduate+Software+Engineer+BBC&location=London",
+    whatToDo:["Apply for UK Graduate Visa (post-study work route — 2 years after degree)","Build a streaming/media project for your portfolio","Check BBC Careers Diversity & Early Careers programme","Apply via BBC Careers portal"] },
+  { id:14, title:"Junior Data Scientist",          company:"HSBC",           location:"London, UK", type:"Full-time",  roles:["ds","ml"],         posted:"1 day ago",   logo:"HS",  color:"#DB0011", tc:"£38–52K/yr",    region:"UK",
+    description:"Support risk modelling and fraud detection using ML. Work with large financial datasets, Python pipelines, and present insights to stakeholders.",
+    skills:["Python","SQL","Scikit-learn","Statistics","Tableau"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Junior+Data+Scientist+HSBC&location=London",
+    whatToDo:["Apply for UK Graduate Visa after completing your degree","Pursue AML or data science certifications","Build a finance-focused data project (e.g. stock prediction)","Apply via HSBC Careers – Graduate & Early Talent"] },
+  { id:15, title:"Cloud Platform Engineer",        company:"NHS Digital",    location:"Leeds, UK",  type:"Full-time",  roles:["cloud","devops"],  posted:"4 days ago",  logo:"NHS", color:"#005EB8", tc:"£34–48K/yr",    region:"UK",
+    description:"Maintain the cloud platform underpinning NHS 111 and COVID-19 services. Work with AWS, Terraform, and GitHub Actions with strict security compliance.",
+    skills:["AWS","Terraform","Docker","CI/CD","Python"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Cloud+Engineer+NHS+Digital&location=Leeds",
+    whatToDo:["Get AWS Solutions Architect Associate certification","Learn NHS Digital Service Standards","Apply for UK Graduate Visa (or Skilled Worker route)","Apply via NHS Jobs — search Digital & Technology roles"] },
+  { id:16, title:"Cybersecurity Analyst",          company:"BT Group",       location:"London, UK", type:"Full-time",  roles:["cyber"],           posted:"2 days ago",  logo:"BT",  color:"#5514B4", tc:"£32–45K/yr",    region:"UK",
+    description:"Monitor BT's global network for threats using Splunk and custom threat intel. Respond to security incidents across enterprise and government clients.",
+    skills:["Splunk","Threat Intel","SIEM","Network Security","OWASP"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Cybersecurity+Analyst+BT+Group&location=London",
+    whatToDo:["Get CompTIA Security+ and CySA+ certifications","Build a home lab with Splunk free tier","Apply for UK Skilled Worker visa (Cybersecurity is on Shortage Occupation List)","Apply via BT Careers Early Careers programme"] },
+  { id:17, title:"Full Stack Developer",           company:"Deliveroo",      location:"London, UK", type:"Full-time",  roles:["fsd","backend"],   posted:"6 hours ago", logo:"DE",  color:"#00CCBC", tc:"£40–58K/yr",    region:"UK",
+    description:"Build order management and restaurant partner dashboards. Work in a cross-functional product squad with React, TypeScript, Ruby on Rails, and GraphQL.",
+    skills:["React","TypeScript","GraphQL","Ruby on Rails","PostgreSQL"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=Full+Stack+Developer+Deliveroo&location=London",
+    whatToDo:["Build a React + TypeScript project with GraphQL","Learn Ruby basics (it's not hard after Python)","Apply for UK Graduate Visa within 6 months of graduation","Apply via Deliveroo Careers or LinkedIn"] },
+  { id:18, title:"ML Research Engineer",           company:"DeepMind",       location:"London, UK", type:"Full-time",  roles:["ml"],              posted:"5 days ago",  logo:"DM",  color:"#4050E0", tc:"£55–80K/yr",    region:"UK",
+    description:"Contribute to state-of-the-art reinforcement learning and LLM research. Implement experiments in JAX/PyTorch, author papers, and collaborate with world-class researchers.",
+    skills:["Python","JAX","PyTorch","Reinforcement Learning","Research"], applyLink:"https://www.linkedin.com/jobs/search/?keywords=ML+Research+Engineer+DeepMind&location=London",
+    whatToDo:["Publish or replicate an ML paper on arXiv","Master JAX or PyTorch with GPU projects","Apply for UK Skilled Worker or Global Talent visa","Apply via Google DeepMind Careers — very competitive, target internship first"] },
+];
+
+const UDEMY_COURSES = [
+  { id:1,  title:"100 Days of Code: Python Bootcamp",        instructor:"Dr. Angela Yu",        rating:4.7, reviews:"310k", price:"₹449", originalPrice:"₹3,499", category:"Programming", relatedCode:"BCSE101E", level:"Beginner",     hours:60, badge:"Bestseller",   color:"#9B72CF", link:"https://www.udemy.com/course/100-days-of-code/" },
+  { id:2,  title:"Java Masterclass – 2024",                  instructor:"Tim Buchalka",         rating:4.6, reviews:"188k", price:"₹449", originalPrice:"₹3,499", category:"Programming", relatedCode:"BCSE103E", level:"Beginner",     hours:80, badge:"Bestseller",   color:"#B48AE0", link:"https://www.udemy.com/course/java-the-complete-java-developer-course/" },
+  { id:3,  title:"The Web Developer Bootcamp 2024",          instructor:"Colt Steele",          rating:4.7, reviews:"250k", price:"₹449", originalPrice:"₹3,499", category:"Programming", relatedCode:"BCSE203E", level:"Beginner",     hours:74, badge:"Bestseller",   color:"#8B6FC4", link:"https://www.udemy.com/course/the-web-developer-bootcamp/" },
+  { id:4,  title:"Data Structures & Algorithms – Python",    instructor:"Scott Barrett",        rating:4.8, reviews:"42k",  price:"₹449", originalPrice:"₹2,299", category:"DSA",         relatedCode:"BCSE202L", level:"Intermediate", hours:22, badge:"Highest Rated", color:"#A87ED6", link:"https://www.udemy.com/course/data-structures-algorithms-python/" },
+  { id:5,  title:"Master the Coding Interview: DSA",         instructor:"Andrei Neagoie",       rating:4.7, reviews:"60k",  price:"₹449", originalPrice:"₹2,299", category:"DSA",         relatedCode:"BCSE204L", level:"Intermediate", hours:19, badge:"",             color:"#7B5FBF", link:"https://www.udemy.com/course/master-the-coding-interview-data-structures-algorithms/" },
+  { id:6,  title:"SQL & Database Design A-Z",                instructor:"Kirill Eremenko",      rating:4.6, reviews:"98k",  price:"₹449", originalPrice:"₹2,299", category:"Data",        relatedCode:"BCSE302L", level:"Beginner",     hours:14, badge:"",             color:"#9D80D4", link:"https://www.udemy.com/course/sqldatabases/" },
+  { id:7,  title:"Machine Learning A-Z",                     instructor:"Kirill Eremenko",      rating:4.5, reviews:"180k", price:"₹449", originalPrice:"₹3,499", category:"Data",        relatedCode:"BCSE306L", level:"Intermediate", hours:44, badge:"Bestseller",   color:"#C49DE8", link:"https://www.udemy.com/course/machinelearning/" },
+  { id:8,  title:"AWS Certified Solutions Architect",        instructor:"Stephane Maarek",      rating:4.7, reviews:"220k", price:"₹449", originalPrice:"₹3,499", category:"Cloud",       relatedCode:"BCSE355L", level:"Intermediate", hours:27, badge:"Bestseller",   color:"#B09BD9", link:"https://www.udemy.com/course/aws-certified-solutions-architect-associate-saa-c03/" },
+  { id:9,  title:"The Complete Cyber Security Course",       instructor:"Nathan House",         rating:4.6, reviews:"75k",  price:"₹449", originalPrice:"₹2,299", category:"Security",    relatedCode:"BCSE309L", level:"Intermediate", hours:17, badge:"",             color:"#8578C0", link:"https://www.udemy.com/course/the-complete-internet-security-privacy-course-volume-1/" },
+  { id:10, title:"Complete Linux Training Course",           instructor:"Imran Afzal",          rating:4.7, reviews:"102k", price:"₹449", originalPrice:"₹2,299", category:"Systems",     relatedCode:"BCSE303L", level:"Beginner",     hours:30, badge:"Bestseller",   color:"#8A68C8", link:"https://www.udemy.com/course/complete-linux-training-course-to-get-your-dream-it-job/" },
+  { id:11, title:"Statistics for Data Science & ML",         instructor:"Jose Portilla",        rating:4.6, reviews:"55k",  price:"₹449", originalPrice:"₹1,999", category:"Mathematics", relatedCode:"BMAT202L", level:"Beginner",     hours:16, badge:"",             color:"#A991DC", link:"https://www.udemy.com/course/statistics-for-data-science-and-business-analysis/" },
+  { id:12, title:"Docker & Kubernetes: The Practical Guide", instructor:"Maximilian Schwarzm.", rating:4.7, reviews:"90k",  price:"₹449", originalPrice:"₹3,499", category:"Cloud",       relatedCode:"BCSE355L", level:"Intermediate", hours:24, badge:"Bestseller",   color:"#C5A8E8", link:"https://www.udemy.com/course/docker-kubernetes-the-practical-guide/" },
+  { id:13, title:"IoT: Raspberry Pi & Arduino",              instructor:"Peter Dalmaris",       rating:4.5, reviews:"18k",  price:"₹449", originalPrice:"₹1,999", category:"Emerging",    relatedCode:"BCSE312L", level:"Beginner",     hours:20, badge:"",             color:"#9B72CF", link:"https://www.udemy.com/course/raspberry-pi-and-arduino-programming/" },
+  { id:14, title:"Ethical Hacking from Scratch",             instructor:"Zaid Sabih",           rating:4.6, reviews:"140k", price:"₹449", originalPrice:"₹2,299", category:"Security",    relatedCode:"BCSE309L", level:"Beginner",     hours:15, badge:"Bestseller",   color:"#8B6FC4", link:"https://www.udemy.com/course/learn-ethical-hacking-from-scratch/" },
+  { id:15, title:"React – The Complete Guide 2024",          instructor:"Maximilian Schwarzm.", rating:4.6, reviews:"195k", price:"₹449", originalPrice:"₹3,499", category:"Programming", relatedCode:"BCSE203E", level:"Intermediate", hours:68, badge:"Bestseller",   color:"#A87ED6", link:"https://www.udemy.com/course/react-the-complete-guide-incl-redux/" },
+  { id:16, title:"Node.js – The Complete Guide",             instructor:"Maximilian Schwarzm.", rating:4.6, reviews:"155k", price:"₹449", originalPrice:"₹3,499", category:"Programming", relatedCode:"BCSE203E", level:"Intermediate", hours:40, badge:"Bestseller",   color:"#9B72CF", link:"https://www.udemy.com/course/nodejs-the-complete-guide/" },
+  { id:17, title:"PyTorch for Deep Learning Bootcamp",       instructor:"Jose Portilla",        rating:4.5, reviews:"32k",  price:"₹449", originalPrice:"₹2,299", category:"Data",        relatedCode:"BCSE306L", level:"Intermediate", hours:17, badge:"",             color:"#C49DE8", link:"https://www.udemy.com/course/pytorch-for-deep-learning-bootcamp/" },
+  { id:18, title:"Git & GitHub Complete Bootcamp",           instructor:"Colt Steele",          rating:4.7, reviews:"78k",  price:"₹449", originalPrice:"₹1,999", category:"Programming", relatedCode:"BCSE301L", level:"Beginner",     hours:17, badge:"Bestseller",   color:"#8B6FC4", link:"https://www.udemy.com/course/git-and-github-bootcamp/" },
+  { id:19, title:"System Design Interview Masterclass",      instructor:"Exponent",             rating:4.6, reviews:"12k",  price:"₹449", originalPrice:"₹2,299", category:"DSA",         relatedCode:"BCSE301L", level:"Advanced",     hours:12, badge:"",             color:"#7B5FBF", link:"https://www.udemy.com/course/system-design-interview-prep/" },
+  { id:20, title:"Computer Networks – A Top-Down Approach",  instructor:"Hamad Mukhtar",        rating:4.5, reviews:"28k",  price:"₹449", originalPrice:"₹1,999", category:"Systems",     relatedCode:"BCSE308L", level:"Beginner",     hours:22, badge:"",             color:"#8A68C8", link:"https://www.udemy.com/course/computer-networking-complete-guide/" },
+  { id:21, title:"Discrete Mathematics for CS",             instructor:"Krzysztof Szymanski",  rating:4.4, reviews:"14k",  price:"₹449", originalPrice:"₹1,999", category:"Mathematics", relatedCode:"BMAT205L", level:"Beginner",     hours:20, badge:"",             color:"#A991DC", link:"https://www.udemy.com/course/discrete-mathematics/" },
+  { id:22, title:"Splunk for Beginners",                    instructor:"Zeal Vora",            rating:4.5, reviews:"22k",  price:"₹449", originalPrice:"₹1,999", category:"Security",    relatedCode:"BCSE309L", level:"Beginner",     hours:9,  badge:"",             color:"#8578C0", link:"https://www.udemy.com/course/splunk-for-beginners/" },
+];
+
+const CATEGORIES  = ["All","Programming","DSA","Systems","Theory","Data","Mathematics","Emerging","Security","Cloud"];
+const PROFICIENCY = ["Beginner","Intermediate","Advanced"];
+const PROF_WEIGHT = { Beginner:0.4, Intermediate:0.7, Advanced:1.0 };
+const CAT_ACCENT  = { Programming:"#9B72CF", DSA:"#A87ED6", Systems:"#8B6FC4", Theory:"#7B5FBF", Data:"#B48AE0", Mathematics:"#C49DE8", Emerging:"#9D80D4", Security:"#8578C0", Cloud:"#B09BD9" };
+
+function computeRoles(selected) {
+  const codes = Object.keys(selected);
+  if (!codes.length) return { strong:[], eligible:[], gaps:{} };
+  const avgW = codes.reduce((s,c)=>s+(PROF_WEIGHT[selected[c]]||0),0)/codes.length;
+  const strong=[],eligible=[],gaps={};
+  ROLES.forEach((role)=>{
+    const reqMet=role.required.every((r)=>codes.includes(r));
+    const bonusMet=role.bonus.filter((b)=>codes.includes(b));
+    const missing=role.required.filter((r)=>!codes.includes(r));
+    const score=((reqMet?0.6:0)+(bonusMet.length/Math.max(role.bonus.length,1))*0.4)*avgW;
+    if(reqMet&&score>=0.45) strong.push({...role,score:Math.round(score*100)});
+    else if(reqMet||(missing.length===1&&bonusMet.length>=1)){
+      eligible.push({...role,score:Math.round(score*80)});
+      gaps[role.id]={missing:missing.map((c)=>COURSES.find((x)=>x.code===c)?.name||c),bonus:role.bonus.filter((b)=>!codes.includes(b)).slice(0,2).map((c)=>COURSES.find((x)=>x.code===c)?.name||c)};
+    }
+  });
+  return {strong:strong.sort((a,b)=>b.score-a.score),eligible:eligible.sort((a,b)=>b.score-a.score).slice(0,5),gaps};
+}
+function computeSkills(selected) {
+  const map={};
+  Object.entries(selected).forEach(([code,prof])=>{(COURSE_SKILLS[code]||[]).forEach((s)=>{map[s]=Math.max(map[s]||0,PROF_WEIGHT[prof]||0.5);});});
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,16);
+}
+
+const T={bg:"#FFFFFF",surface:"#F8F8FA",surface2:"#F0EFF5",surface3:"#E8E6F0",border:"#E4E2EE",borderStrong:"#C8C4DC",text:"#1A1825",textSub:"#6B6780",textMuted:"#A09CB8",accent:"#8B5CF6",accentMid:"#9D72F8",accentSoft:"#F3EFFE",accentBorder:"#D4BBFC",accentText:"#5B3BB5",green:"#16A34A",greenSoft:"#F0FDF4",greenBorder:"#BBF7D0",amber:"#B45309",amberSoft:"#FFFBEB",amberBorder:"#FDE68A",red:"#DC2626",redSoft:"#FEF2F2"};
+const PC={Beginner:{text:"#B45309",bg:"#FFFBEB",border:"#FDE68A"},Intermediate:{text:"#5B3BB5",bg:"#F3EFFE",border:"#D4BBFC"},Advanced:{text:"#166534",bg:"#F0FDF4",border:"#BBF7D0"}};
+
+function EmptyState({msg,btnLabel,btnTab,onTabChange}){
+  return(<div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:4,padding:"5rem 2rem",textAlign:"center"}}><div style={{fontSize:32,marginBottom:12,opacity:0.2}}>◎</div><div style={{fontSize:13,fontWeight:700,color:T.textSub,marginBottom:8,letterSpacing:"0.06em",textTransform:"uppercase"}}>Nothing here yet</div><div style={{fontSize:13,color:T.textMuted,marginBottom:24,maxWidth:320,margin:"0 auto 24px"}}>{msg}</div>{btnLabel&&<button onClick={()=>onTabChange(btnTab)} style={{padding:"10px 24px",background:T.accent,color:"#fff",border:"none",borderRadius:4,fontSize:13,fontWeight:600,cursor:"pointer"}}>{btnLabel}</button>}</div>);
+}
+function StarRating({rating}){
+  return(<span style={{display:"inline-flex",alignItems:"center",gap:2}}>{[1,2,3,4,5].map((s)=>(<svg key={s} width="10" height="10" viewBox="0 0 10 10"><path d="M5 1l1.12 2.27L9 3.64 7 5.59l.47 2.73L5 7l-2.47 1.32L3 5.59 1 3.64l2.88-.37z" fill={s<=Math.round(rating)?"#F59E0B":"#E4E2EE"}/></svg>))}<span style={{fontSize:11,fontWeight:600,color:"#92400E",marginLeft:2}}>{rating}</span></span>);
+}
+
+/* ─────────────────────────── SCROLL REVEAL HOOK ─────────────────────────── */
+function useReveal(delay=0) {
+  const ref = useRef(null);
+  const [vis, setVis] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVis(true); }, { threshold: 0.08 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, vis, delay];
+}
+
+function Reveal({ children, delay = 0, style = {} }) {
+  const [ref, vis] = useReveal();
+  return (
+    <div ref={ref} style={{
+      opacity: vis ? 1 : 0,
+      transform: vis ? "translateY(0)" : "translateY(28px)",
+      transition: `opacity 0.65s cubic-bezier(.4,0,.2,1) ${delay}ms, transform 0.65s cubic-bezier(.4,0,.2,1) ${delay}ms`,
+      ...style
+    }}>
+      {children}
+    </div>
+  );
+}
+
+/* ─────────────────────────── LINKEDIN HELPERS ─────────────────────────── */
+function parseLinkedInUrl(raw) {
+  // Accept: full URL, /in/slug, or bare slug
+  const match = raw.trim().match(/linkedin\.com\/in\/([^/?#\s]+)/i) || raw.trim().match(/^([a-z0-9-]+)$/i);
+  return match ? match[1].toLowerCase() : null;
+}
+function slugToName(slug) {
+  return slug.replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+}
+
+/* ─────────────────────────── LOGIN PAGE ─────────────────────────── */
+function LoginPage({ onLogin }) {
+  const [mode, setMode] = useState("choose"); // choose | linkedin | manual
+  const [liUrl, setLiUrl] = useState("");
+  const [liError, setLiError] = useState("");
+  const [liPhase, setLiPhase] = useState("idle"); // idle | loading | done
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [manualPhase, setManualPhase] = useState("idle");
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current, ctx = canvas.getContext("2d");
+    let W = canvas.width = canvas.offsetWidth, H = canvas.height = canvas.offsetHeight;
+    const pts = Array.from({ length: 55 }, () => ({ x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-.5)*.4, vy:(Math.random()-.5)*.4, r:Math.random()*2+1, a:Math.random()*.4+.1 }));
+    let raf;
+    function draw() {
+      ctx.clearRect(0,0,W,H);
+      pts.forEach((p,i) => {
+        pts.slice(i+1).forEach(q => { const d=Math.hypot(p.x-q.x,p.y-q.y); if(d<120){ctx.beginPath();ctx.strokeStyle=`rgba(255,255,255,${.04*(1-d/120)})`;ctx.lineWidth=.5;ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();}});
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(167,139,250,${p.a*0.5})`;ctx.fill();
+        p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+      });
+      raf = requestAnimationFrame(draw);
+    }
+    draw();
+    const onResize = () => { W=canvas.width=canvas.offsetWidth; H=canvas.height=canvas.offsetHeight; };
+    window.addEventListener("resize", onResize);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); };
+  }, []);
+
+  function handleLinkedIn() {
+    const slug = parseLinkedInUrl(liUrl);
+    if (!slug) { setLiError("Paste a valid LinkedIn profile URL or username."); return; }
+    setLiError("");
+    setLiPhase("loading");
+    // Open their actual LinkedIn profile in a new tab so they can verify
+    window.open(`https://www.linkedin.com/in/${slug}`, "_blank", "noopener");
+    setTimeout(() => {
+      setLiPhase("done");
+      const derivedName = slugToName(slug);
+      setTimeout(() => onLogin(derivedName, {
+        name: derivedName,
+        slug,
+        headline: "Computer Science Student at VIT University",
+        location: "Vellore, Tamil Nadu, India",
+        profileUrl: `https://www.linkedin.com/in/${slug}`,
+      }), 800);
+    }, 1600);
+  }
+
+  function handleManual() {
+    if (!name.trim()) return;
+    setManualPhase("loading");
+    setTimeout(() => { setManualPhase("done"); setTimeout(() => onLogin(name, null), 600); }, 1200);
+  }
+
+  const LI_ICON = (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+    </svg>
+  );
+
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"stretch", fontFamily:"'Sora',sans-serif", overflow:"hidden" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0;}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        @keyframes fadeSlide{from{opacity:0;transform:translateX(14px);}to{opacity:1;transform:translateX(0);}}
+      `}</style>
+
+      {/* LEFT — dark brand panel */}
+      <div style={{ flex:"1 1 55%", background:"linear-gradient(145deg,#0F0E17 0%,#1A1825 60%,#221C35 100%)", display:"flex", flexDirection:"column", justifyContent:"center", padding:"4rem", position:"relative", overflow:"hidden" }}>
+        <canvas ref={canvasRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%" }} />
+        <div style={{ position:"absolute",width:400,height:400,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.08)",top:-120,right:-120 }}/>
+        <div style={{ position:"absolute",width:280,height:280,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.06)",bottom:-80,left:-80 }}/>
+        <div style={{ position:"relative", zIndex:2 }}>
+          <div style={{ display:"flex",alignItems:"center",gap:14,marginBottom:"3.5rem" }}>
+            <div style={{ width:48,height:48,background:"rgba(255,255,255,0.15)",borderRadius:12,backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid rgba(255,255,255,0.2)" }}>
+              <svg width="22" height="22" viewBox="0 0 18 18" fill="none"><path d="M9 1.5L16.5 5.5V12.5L9 16.5L1.5 12.5V5.5L9 1.5Z" fill="rgba(255,255,255,0.2)" stroke="white" strokeWidth="1.3"/><path d="M9 5L13 7.5V10.5L9 13L5 10.5V7.5L9 5Z" fill="white"/></svg>
+            </div>
+            <div>
+              <div style={{ fontWeight:800,fontSize:20,color:"#fff",letterSpacing:"-0.03em" }}>VCCIS</div>
+              <div style={{ fontSize:10,color:"rgba(255,255,255,0.6)",letterSpacing:"0.16em" }}>COURSE TO CAREER</div>
+            </div>
+          </div>
+          <h1 style={{ fontWeight:800,fontSize:44,color:"#fff",lineHeight:1.08,letterSpacing:"-0.04em",marginBottom:16 }}>Know your courses.<br/>Own your career.</h1>
+          <p style={{ fontSize:15,color:"rgba(255,255,255,0.68)",lineHeight:1.65,maxWidth:400,marginBottom:"3rem" }}>Pick your VIT subjects, set proficiency, and instantly see which careers you qualify for — plus matching jobs on LinkedIn and courses to fill your gaps.</p>
+          <div style={{ display:"flex",gap:32 }}>
+            {[["26","VIT Courses"],["12+","Career Paths"],["18+","Live Jobs"]].map(([v,l])=>(
+              <div key={l}>
+                <div style={{ fontWeight:800,fontSize:26,color:"#fff",letterSpacing:"-0.03em" }}>{v}</div>
+                <div style={{ fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:2 }}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT — auth panel */}
+      <div style={{ flex:"1 1 45%", display:"flex", alignItems:"center", justifyContent:"center", padding:"3rem 4rem", background:"#fff" }}>
+        <div style={{ width:"100%", maxWidth:400 }}>
+
+          {/* ── CHOOSE MODE ── */}
+          {mode === "choose" && (
+            <div style={{ animation:"fadeSlide .3s ease" }}>
+              <h2 style={{ fontWeight:800,fontSize:28,color:T.text,letterSpacing:"-0.03em",marginBottom:6 }}>Let's get you set up</h2>
+              <p style={{ fontSize:14,color:T.textSub,marginBottom:28 }}>Quick setup — no account, no password.</p>
+
+              {/* LinkedIn — Primary */}
+              <button onClick={() => setMode("linkedin")} style={{ width:"100%",padding:"15px 20px",background:"#0A66C2",color:"#fff",border:"none",borderRadius:10,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:14,fontFamily:"'Sora',sans-serif",boxShadow:"0 4px 20px rgba(10,102,194,0.3)",transition:"all .18s" }}
+                onMouseEnter={e=>{e.currentTarget.style.background="#084f9a";e.currentTarget.style.transform="translateY(-1px)";}}
+                onMouseLeave={e=>{e.currentTarget.style.background="#0A66C2";e.currentTarget.style.transform="none";}}>
+                <span style={{ color:"#fff" }}>{LI_ICON}</span>
+                Connect with LinkedIn
+              </button>
+
+              <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14 }}>
+                <div style={{ flex:1,height:1,background:T.border }}/>
+                <span style={{ fontSize:12,color:T.textMuted }}>or</span>
+                <div style={{ flex:1,height:1,background:T.border }}/>
+              </div>
+
+              {/* Manual — Secondary */}
+              <button onClick={() => setMode("manual")} style={{ width:"100%",padding:"13px 20px",background:"transparent",color:T.textSub,border:`1.5px solid ${T.border}`,borderRadius:10,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"'Sora',sans-serif",transition:"all .18s" }}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=T.accentBorder;e.currentTarget.style.color=T.accent;e.currentTarget.style.background=T.accentSoft;}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.textSub;e.currentTarget.style.background="transparent";}}>
+                Continue without LinkedIn →
+              </button>
+            </div>
+          )}
+
+          {/* ── LINKEDIN CONNECT ── */}
+          {mode === "linkedin" && (
+            <div style={{ animation:"fadeSlide .3s ease" }}>
+              <div style={{ background:"#0A66C2",borderRadius:10,padding:"18px 22px",marginBottom:24,display:"flex",alignItems:"center",gap:10 }}>
+                <span style={{ color:"#fff" }}>{LI_ICON}</span>
+                <span style={{ color:"#fff",fontWeight:700,fontSize:16 }}>Connect your LinkedIn</span>
+              </div>
+
+              {liPhase === "idle" && (
+                <>
+                  <p style={{ fontSize:13,color:T.textSub,lineHeight:1.6,marginBottom:20 }}>
+                    Paste your LinkedIn profile URL below. We'll link your account so Apply buttons open your actual LinkedIn profile.
+                  </p>
+                  <label style={{ fontSize:12,fontWeight:600,color:T.textSub,display:"block",marginBottom:6,letterSpacing:"0.05em" }}>YOUR LINKEDIN URL</label>
+                  <input
+                    value={liUrl}
+                    onChange={e=>{setLiUrl(e.target.value);setLiError("");}}
+                    placeholder="linkedin.com/in/your-name"
+                    onKeyDown={e=>e.key==="Enter"&&handleLinkedIn()}
+                    style={{ width:"100%",padding:"11px 14px",border:`1.5px solid ${liError?T.red:T.border}`,borderRadius:8,fontSize:14,fontFamily:"'Sora',sans-serif",color:T.text,outline:"none",boxSizing:"border-box",marginBottom:6 }}
+                    onFocus={e=>e.target.style.borderColor="#0A66C2"}
+                    onBlur={e=>e.target.style.borderColor=liError?T.red:T.border}
+                  />
+                  {liError && <div style={{ fontSize:11,color:T.red,marginBottom:10 }}>{liError}</div>}
+                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:16,padding:"10px 12px",background:"#F0F9FF",borderRadius:6,border:"1px solid #BAE6FD" }}>
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="#0284C7"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 3a1 1 0 110 2 1 1 0 010-2zm-1 4h2v5H9V9z"/></svg>
+                    <span style={{ fontSize:11,color:"#0284C7",lineHeight:1.5 }}>We only use your URL to open your LinkedIn profile — no passwords, no data access.</span>
+                  </div>
+                  <button onClick={handleLinkedIn} style={{ width:"100%",padding:"13px",background:"#0A66C2",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Sora',sans-serif",marginBottom:10 }}>
+                    Connect & Open LinkedIn ↗
+                  </button>
+                  <button onClick={()=>setMode("choose")} style={{ width:"100%",padding:"10px",background:"transparent",color:T.textMuted,border:"none",fontSize:13,cursor:"pointer",fontFamily:"'Sora',sans-serif" }}>← Back</button>
+                </>
+              )}
+
+              {liPhase === "loading" && (
+                <div style={{ textAlign:"center",padding:"2.5rem 0" }}>
+                  <div style={{ width:52,height:52,border:"3px solid #DBEAFE",borderTopColor:"#0A66C2",borderRadius:"50%",margin:"0 auto 20px",animation:"spin 0.8s linear infinite" }}/>
+                  <div style={{ fontWeight:600,color:T.text,marginBottom:8 }}>Connecting…</div>
+                  <div style={{ fontSize:13,color:T.textMuted }}>Your LinkedIn profile is opening in a new tab</div>
+                </div>
+              )}
+
+              {liPhase === "done" && (
+                <div style={{ textAlign:"center",padding:"2.5rem 0" }}>
+                  <div style={{ width:56,height:56,background:"#DCFCE7",borderRadius:"50%",margin:"0 auto 16px",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                  <div style={{ fontWeight:700,color:T.text,fontSize:17,marginBottom:6 }}>Connected!</div>
+                  <div style={{ fontSize:13,color:T.textMuted }}>Taking you in…</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── MANUAL FORM ── */}
+          {mode === "manual" && (
+            <div style={{ animation:"fadeSlide .3s ease" }}>
+              <button onClick={()=>setMode("choose")} style={{ fontSize:13,color:T.textMuted,background:"none",border:"none",cursor:"pointer",padding:0,marginBottom:20,display:"flex",alignItems:"center",gap:4,fontFamily:"'Sora',sans-serif" }}>← Back</button>
+              <h2 style={{ fontWeight:800,fontSize:26,color:T.text,letterSpacing:"-0.03em",marginBottom:6 }}>Enter your details</h2>
+              <p style={{ fontSize:14,color:T.textSub,marginBottom:24 }}>Quick setup — no account needed.</p>
+              <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+                {[["FULL NAME","text","Charith Reddy",name,setName],["EMAIL","email","you@vit.ac.in",email,()=>{}]].map(([lbl,type,ph,val,set])=>(
+                  <div key={lbl}>
+                    <label style={{ fontSize:12,fontWeight:600,color:T.textSub,letterSpacing:"0.05em",display:"block",marginBottom:6 }}>{lbl}</label>
+                    <input value={val} onChange={e=>lbl==="FULL NAME"?setName(e.target.value):null} placeholder={ph} type={type} style={{ width:"100%",padding:"11px 14px",border:`1.5px solid ${T.border}`,borderRadius:8,fontSize:14,fontFamily:"'Sora',sans-serif",color:T.text,background:T.bg,outline:"none",transition:"border-color .14s" }} onFocus={e=>e.target.style.borderColor=T.accentBorder} onBlur={e=>e.target.style.borderColor=T.border} onKeyDown={e=>{if(e.key==="Enter")handleManual();}}/>
+                  </div>
+                ))}
+                <button onClick={handleManual} disabled={manualPhase==="loading"} style={{ marginTop:4,padding:"13px",background:manualPhase==="done"?T.green:T.accent,color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:manualPhase==="loading"?"not-allowed":"pointer",transition:"background .2s",fontFamily:"'Sora',sans-serif" }}>
+                  {manualPhase==="idle"?"Start Mapping →":manualPhase==="loading"?"Setting up…":"✓ Let's go!"}
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────── HOME PAGE (REDESIGNED) ─────────────────────────── */
+function HomePage({ userName, selected, strong, eligible, skills, filteredJobs, setTab, linkedIn, onLinkedInConnect }) {
+  const count = Object.keys(selected).length;
+  const topSkills = skills.slice(0, 8);
+  const scrollRef = useRef(null);
+
+  const statItems = [
+    { val: count, label: "Courses", sub: "selected", color: "#8B5CF6", bg: "rgba(139,92,246,0.1)", border: "rgba(139,92,246,0.25)" },
+    { val: skills.length, label: "Skills", sub: "unlocked", color: "#06B6D4", bg: "rgba(6,182,212,0.08)", border: "rgba(6,182,212,0.2)" },
+    { val: strong.length, label: "Strong", sub: "matches", color: "#10B981", bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.2)" },
+    { val: filteredJobs.length, label: "Jobs", sub: "available", color: "#F59E0B", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.2)" },
+  ];
+
+  const steps = [
+    { num: "01", label: "Pick Courses", desc: "Select your completed VIT subjects.", tab: "courses", done: count > 0, color: "#8B5CF6" },
+    { num: "02", label: "See Skills", desc: "See exactly what you know.", tab: "skills", done: skills.length > 0, color: "#06B6D4" },
+    { num: "03", label: "Match Roles", desc: "Find careers you already qualify for.", tab: "roles", done: strong.length > 0, color: "#10B981" },
+    { num: "04", label: "Apply on LinkedIn", desc: "Browse real jobs matched to you.", tab: "jobs", done: false, color: "#F59E0B" },
+    { num: "05", label: "Fill Gaps", desc: "Udemy picks for what you're missing.", tab: "udemy", done: false, color: "#EF4444" },
+  ];
+
+  const H = {
+    bg: "#0A0812",
+    card: "rgba(255,255,255,0.04)",
+    cardBorder: "rgba(255,255,255,0.09)",
+    cardHover: "rgba(255,255,255,0.07)",
+    text: "#F1EFFE",
+    textSub: "rgba(241,239,254,0.6)",
+    textMuted: "rgba(241,239,254,0.35)",
+    accent: "#A78BFA",
+    accentGlow: "rgba(167,139,250,0.35)",
+  };
+
+  return (
+    <div style={{ fontFamily: "'Sora',sans-serif", margin: "-2.5rem -2rem", overflow: "hidden" }}>
+
+      {/* ═══════════ HERO ═══════════ */}
+      <div style={{ background: H.bg, position: "relative", padding: "5rem 3rem 6rem", overflow: "hidden", minHeight: "88vh", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+
+        {/* Gradient orbs */}
+        <div style={{ position: "absolute", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 70%)", top: -150, right: -100, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)", bottom: -100, left: -80, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(167,139,250,0.08) 0%, transparent 70%)", top: "40%", left: "40%", pointerEvents: "none" }} />
+
+        {/* Grid pattern overlay */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize: "40px 40px", pointerEvents: "none" }} />
+
+        <div style={{ position: "relative", zIndex: 2, maxWidth: 1160, margin: "0 auto", width: "100%" }}>
+
+          {/* Status pill */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 100, padding: "6px 16px 6px 10px", marginBottom: 32, backdropFilter: "blur(8px)" }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#86EFAC", boxShadow: "0 0 6px #86EFAC" }} />
+            <span style={{ fontSize: 13, color: H.accent, fontWeight: 500 }}>Welcome back, {userName}</span>
+          </div>
+
+          {/* Main headline */}
+          <h1 style={{ fontWeight: 800, fontSize: "clamp(40px,5vw,72px)", color: H.text, letterSpacing: "-0.04em", lineHeight: 1.05, marginBottom: 24, maxWidth: 820 }}>
+            {count === 0
+              ? (<>Your career<br /><span style={{ background: "linear-gradient(135deg,#A78BFA,#06B6D4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>starts here.</span></>)
+              : (<>You match <span style={{ background: "linear-gradient(135deg,#A78BFA,#10B981)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{strong.length + eligible.length} paths.</span></>)
+            }
+          </h1>
+
+          <p style={{ fontSize: 18, color: H.textSub, lineHeight: 1.75, maxWidth: 560, marginBottom: 44 }}>
+            {count === 0
+              ? "Select your college courses to discover which tech careers you're on track for — and what skills you're building along the way."
+              : `${count} courses → ${skills.length} skills → ${strong.length + eligible.length} career roles. ${strong[0] ? `Strongest match: ${strong[0].title}.` : ""}`
+            }
+          </p>
+
+          {/* CTA buttons */}
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 72 }}>
+            <button onClick={() => setTab("courses")} style={{ padding: "14px 30px", background: H.accent, color: "#1A0A4E", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", letterSpacing: "0.01em", boxShadow: `0 0 30px ${H.accentGlow}`, transition: "all .2s" }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 40px ${H.accentGlow}`; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = `0 0 30px ${H.accentGlow}`; }}>
+              {count === 0 ? "Select Courses →" : "Update Courses →"}
+            </button>
+            {count > 0 && (
+              <button onClick={() => setTab("roles")} style={{ padding: "14px 30px", background: "rgba(255,255,255,0.07)", color: H.text, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer", backdropFilter: "blur(8px)", transition: "all .2s" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}>
+                View career matches →
+              </button>
+            )}
+            {linkedIn && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px", background: "rgba(10,102,194,0.15)", border: "1px solid rgba(10,102,194,0.35)", borderRadius: 8 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#60A5FA"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                <span style={{ fontSize: 13, color: "#93C5FD", fontWeight: 600 }}>{linkedIn.name}</span>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#86EFAC", boxShadow: "0 0 4px #86EFAC" }} />
+              </div>
+            )}
+          </div>
+
+          {/* Floating stat cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+            {statItems.map(({ val, label, sub, color, bg, border }, i) => (
+              <div key={label} style={{
+                background: bg, border: `1px solid ${border}`, borderRadius: 12, padding: "20px 20px", backdropFilter: "blur(8px)",
+                animation: `fadeUp 0.5s ease ${i * 80}ms both`
+              }}>
+                <div style={{ fontWeight: 800, fontSize: 40, color, letterSpacing: "-0.05em", lineHeight: 1 }}>{val}</div>
+                <div style={{ fontSize: 13, color: H.text, fontWeight: 600, marginTop: 6 }}>{label}</div>
+                <div style={{ fontSize: 11, color: H.textMuted, marginTop: 2 }}>{sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div style={{ position: "absolute", bottom: 32, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, animation: "bounce 2s infinite" }}>
+          <span style={{ fontSize: 11, color: H.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: "monospace" }}>scroll</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M3 8l4 4 4-4" stroke="rgba(167,139,250,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </div>
+      </div>
+
+      {/* ═══════════ LINKEDIN PROFILE (if connected) ═══════════ */}
+      {linkedIn && (
+        <div style={{ background: "#EFF6FF", borderBottom: "1px solid #DBEAFE", padding: "2rem 3rem" }}>
+          <div style={{ maxWidth: 1160, margin: "0 auto", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#0A66C2", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 22, flexShrink: 0 }}>
+              {linkedIn.name[0]}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span style={{ fontWeight: 700, fontSize: 16, color: "#1E3A5F" }}>{linkedIn.name}</span>
+                <span style={{ fontSize: 10, background: "#0A66C2", color: "#fff", padding: "2px 8px", borderRadius: 3, fontWeight: 600 }}>LinkedIn</span>
+              </div>
+              <div style={{ fontSize: 13, color: "#4B5563", marginBottom: 6 }}>{linkedIn.headline}</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {linkedIn.skills.map(s => (
+                  <span key={s} style={{ fontSize: 11, padding: "2px 9px", borderRadius: 3, background: "#DBEAFE", color: "#1D4ED8", fontWeight: 500 }}>{s}</span>
+                ))}
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontWeight: 700, fontSize: 20, color: "#0A66C2" }}>{linkedIn.connections}+</div>
+              <div style={{ fontSize: 11, color: "#6B7280" }}>connections</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════ LIGHT SECTIONS ═══════════ */}
+      <div style={{ background: "#fff", padding: "5rem 3rem" }}>
+        <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+
+          {/* ─── Journey Steps ─── */}
+          <Reveal>
+            <div style={{ marginBottom: "5rem" }}>
+              <div style={{ fontSize: 11, fontFamily: "monospace", color: T.textMuted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>How it works</div>
+              <h2 style={{ fontWeight: 800, fontSize: 36, color: T.text, letterSpacing: "-0.04em", marginBottom: 40 }}>Your journey in 5 steps</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 2 }}>
+                {steps.map((s, i) => (
+                  <Reveal key={s.num} delay={i * 80}>
+                    <div onClick={() => setTab(s.tab)} style={{
+                      padding: "1.6rem 1.4rem", cursor: "pointer", position: "relative", overflow: "hidden",
+                      background: s.done ? `${s.color}08` : "#FAFAFA",
+                      border: `1px solid ${s.done ? s.color + "30" : T.border}`,
+                      borderRadius: i === 0 ? "12px 0 0 12px" : i === 4 ? "0 12px 12px 0" : "0",
+                      transition: "all .18s",
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.background = `${s.color}12`; e.currentTarget.style.borderColor = s.color + "50"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = s.done ? `${s.color}08` : "#FAFAFA"; e.currentTarget.style.borderColor = s.done ? s.color + "30" : T.border; }}>
+                      {/* Progress bar */}
+                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: s.done ? s.color : T.border, borderRadius: "2px 2px 0 0" }} />
+                      {s.done && (
+                        <div style={{ position: "absolute", top: 12, right: 12, width: 16, height: 16, borderRadius: "50%", background: s.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <svg width="8" height="6" viewBox="0 0 10 8" fill="none"><path d="M1 3.8L4 7L9 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                        </div>
+                      )}
+                      <div style={{ fontFamily: "monospace", fontSize: 10, color: s.done ? s.color : T.textMuted, letterSpacing: "0.1em", marginBottom: 12, fontWeight: 600 }}>{s.num}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: T.text, marginBottom: 6, letterSpacing: "-0.02em" }}>{s.label}</div>
+                      <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.55 }}>{s.desc}</div>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+
+          {/* ─── Skills + Career Matches Grid ─── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "5rem" }}>
+
+            {/* Skills */}
+            <Reveal delay={0}>
+              <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, padding: "2rem", height: "100%" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontFamily: "monospace", color: T.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Unlocked</div>
+                    <div style={{ fontWeight: 700, fontSize: 20, color: T.text, letterSpacing: "-0.03em" }}>Skill Profile</div>
+                  </div>
+                  <button onClick={() => setTab("skills")} style={{ fontSize: 12, color: T.accent, background: T.accentSoft, border: `1px solid ${T.accentBorder}`, borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontWeight: 600 }}>View all →</button>
+                </div>
+                {topSkills.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "3rem 0", color: T.textMuted, fontSize: 13 }}>Select courses to unlock skills</div>
+                ) : topSkills.map(([skill, strength], i) => {
+                  const lvl = strength >= 0.9 ? "Advanced" : strength >= 0.65 ? "Intermediate" : "Beginner";
+                  const bc = strength >= 0.9 ? T.green : strength >= 0.65 ? T.accent : T.amber;
+                  return (
+                    <div key={skill} style={{ marginBottom: 14, animation: `fadeUp 0.4s ease ${i * 50}ms both` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{skill}</span>
+                        <span style={{ fontSize: 10, color: bc, fontWeight: 700 }}>{lvl}</span>
+                      </div>
+                      <div style={{ height: 5, background: T.surface2, borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${Math.round(strength * 100)}%`, background: `linear-gradient(90deg, ${bc}, ${bc}aa)`, borderRadius: 3, transition: "width 1s cubic-bezier(.4,0,.2,1)" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Reveal>
+
+            {/* Career Matches */}
+            <Reveal delay={120}>
+              <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, padding: "2rem", height: "100%" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontFamily: "monospace", color: T.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Best fits</div>
+                    <div style={{ fontWeight: 700, fontSize: 20, color: T.text, letterSpacing: "-0.03em" }}>Career Matches</div>
+                  </div>
+                  <button onClick={() => setTab("roles")} style={{ fontSize: 12, color: T.accent, background: T.accentSoft, border: `1px solid ${T.accentBorder}`, borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontWeight: 600 }}>View all →</button>
+                </div>
+                {strong.length === 0 && eligible.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "3rem 0", color: T.textMuted, fontSize: 13 }}>Add DSA, OS, or DBMS to unlock roles</div>
+                ) : (
+                  [...strong.slice(0, 4), ...(strong.length < 4 ? eligible.slice(0, 4 - strong.length) : [])].map((role, i) => (
+                    <div key={role.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: `1px solid ${T.border}`, animation: `fadeUp 0.4s ease ${i * 60}ms both` }}>
+                      <div style={{ width: 38, height: 38, borderRadius: 10, background: `${role.color}12`, border: `1px solid ${role.color}25`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: role.color, flexShrink: 0 }}>{role.symbol}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: T.text, letterSpacing: "-0.01em" }}>{role.title}</div>
+                        <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{role.salary} · {role.demand} demand</div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+                        <span style={{ fontWeight: 800, fontSize: 24, color: role.color, letterSpacing: "-0.04em" }}>{role.score}</span>
+                        <span style={{ fontSize: 10, color: T.textMuted }}>%</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Reveal>
+          </div>
+
+          {/* ─── Recent Jobs ─── */}
+          <Reveal>
+            <div style={{ marginBottom: "5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
+                <div>
+                  <div style={{ fontSize: 11, fontFamily: "monospace", color: T.textMuted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 8 }}>Latest openings · India</div>
+                  <h2 style={{ fontWeight: 800, fontSize: 32, color: T.text, letterSpacing: "-0.04em" }}>Jobs for you</h2>
+                </div>
+                <button onClick={() => setTab("jobs")} style={{ fontSize: 13, color: T.accent, background: T.accentSoft, border: `1px solid ${T.accentBorder}`, borderRadius: 8, padding: "8px 18px", cursor: "pointer", fontWeight: 600 }}>View all {filteredJobs.length} jobs →</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
+                {filteredJobs.slice(0, 3).map((job, i) => (
+                  <Reveal key={job.id} delay={i * 80}>
+                    <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 14, padding: "1.5rem", cursor: "pointer", transition: "all .18s", height: "100%" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = T.accentBorder; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(139,92,246,0.1)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
+                      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 10, background: `${job.color}15`, border: `1px solid ${job.color}30`, color: job.color, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>{job.logo}</div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: T.text, lineHeight: 1.3, letterSpacing: "-0.01em" }}>{job.title}</div>
+                          <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>{job.company} · {job.location}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: T.text, fontFamily: "monospace" }}>{job.tc}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 4, background: job.type === "Internship" ? T.accentSoft : T.greenSoft, color: job.type === "Internship" ? T.accent : T.green, border: `1px solid ${job.type === "Internship" ? T.accentBorder : T.greenBorder}` }}>{job.type}</span>
+                      </div>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+              {filteredJobs.length === 0 && (
+                <div style={{ textAlign: "center", padding: "3rem", color: T.textMuted, fontSize: 14, background: T.surface, borderRadius: 12, border: `1px solid ${T.border}` }}>
+                  Add more courses to unlock matching jobs
+                </div>
+              )}
+            </div>
+          </Reveal>
+
+          {/* ─── Udemy Picks ─── */}
+          <Reveal>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
+                <div>
+                  <div style={{ fontSize: 11, fontFamily: "monospace", color: T.textMuted, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 8 }}>Udemy · Fill the gaps</div>
+                  <h2 style={{ fontWeight: 800, fontSize: 32, color: T.text, letterSpacing: "-0.04em" }}>What to learn next</h2>
+                </div>
+                <button onClick={() => setTab("udemy")} style={{ fontSize: 13, color: "#E05936", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "8px 18px", cursor: "pointer", fontWeight: 600 }}>See all gaps →</button>
+              </div>
+              {/* Horizontal scroll */}
+              <div ref={scrollRef} style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 12, scrollSnapType: "x mandatory", cursor: "grab", WebkitOverflowScrolling: "touch" }}
+                onMouseDown={e => { scrollRef.current._startX = e.clientX; scrollRef.current._scrollLeft = scrollRef.current.scrollLeft; scrollRef.current.style.cursor = "grabbing"; }}
+                onMouseMove={e => { if (!scrollRef.current._startX) return; scrollRef.current.scrollLeft = scrollRef.current._scrollLeft - (e.clientX - scrollRef.current._startX); }}
+                onMouseUp={() => { scrollRef.current._startX = null; scrollRef.current.style.cursor = "grab"; }}
+                onMouseLeave={() => { scrollRef.current._startX = null; scrollRef.current.style.cursor = "grab"; }}>
+                {UDEMY_COURSES.filter(u => u.badge === "Bestseller" && !selected[u.relatedCode]).slice(0, 8).map((course, i) => (
+                  <div key={course.id} style={{ minWidth: 280, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden", scrollSnapAlign: "start", transition: "all .18s", flexShrink: 0 }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = T.accentBorder; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(139,92,246,0.09)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
+                    <div style={{ height: 4, background: `linear-gradient(90deg,${course.color},${course.color}77)` }} />
+                    <div style={{ padding: "1.25rem" }}>
+                      <div style={{ display: "flex", gap: 5, marginBottom: 10, flexWrap: "wrap" }}>
+                        {course.badge && <span style={{ fontSize: 9, fontWeight: 700, background: "#FEF9C3", color: "#92400E", padding: "2px 7px", borderRadius: 3, border: "1px solid #FDE68A" }}>{course.badge}</span>}
+                        <span style={{ fontSize: 9, background: "#FFF7ED", color: "#C2410C", padding: "2px 7px", borderRadius: 3, fontWeight: 600, border: "1px solid #FED7AA" }}>Gap</span>
+                        <span style={{ fontSize: 9, background: T.surface2, color: T.textSub, padding: "2px 7px", borderRadius: 3, fontWeight: 500 }}>{course.hours}h · {course.level}</span>
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: T.text, lineHeight: 1.35, marginBottom: 6, letterSpacing: "-0.01em" }}>{course.title}</div>
+                      <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 12 }}>{course.instructor}</div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div>
+                          <StarRating rating={course.rating} />
+                          <div style={{ fontSize: 10, color: T.textMuted, marginTop: 2 }}>({course.reviews})</div>
+                        </div>
+                        <a href={course.link} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 600, color: "#fff", background: "#E05936", borderRadius: 6, padding: "6px 14px", textDecoration: "none" }}>Enrol ↗</a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+/* ─────────────────────────── MAIN APP ─────────────────────────── */
+function App() {
+  const [userName, setUserName] = useState(null);
+  const [selected, setSelected] = useState({});
+  const [tab, setTab] = useState("courses");
+  const [cat, setCat] = useState("All");
+  const [search, setSearch] = useState("");
+  const [udemyCat, setUdemyCat] = useState("All");
+  const [jobFilter, setJobFilter] = useState("All");
+  const [mounted, setMounted] = useState(false);
+  const [linkedIn, setLinkedIn] = useState(null); // LinkedIn profile state
+  const [jobExpand, setJobExpand] = useState(null); // expanded job id
+  const [liModal, setLiModal] = useState(false);
+  const [liEmail2, setLiEmail2] = useState("");
+  const [liPhase2, setLiPhase2] = useState("idle");
+
+  useEffect(() => { setTimeout(() => setMounted(true), 50); }, []);
+
+  const { strong, eligible, gaps } = useMemo(() => computeRoles(selected), [selected]);
+  const skills = useMemo(() => computeSkills(selected), [selected]);
+  const count = Object.keys(selected).length;
+  const eligibleIds = [...strong, ...eligible].map(r => r.id);
+
+  const filtered = COURSES.filter(c => (cat === "All" || c.category === cat) && (c.name.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase())));
+  const filteredJobs = JOBS.filter(j => j.region === "India" && (jobFilter === "All" || j.type === jobFilter) && (eligibleIds.length === 0 || j.roles.some(r => eligibleIds.includes(r))));
+  const filteredUdemy = UDEMY_COURSES.filter(u => {
+    const catMatch = udemyCat === "All" || u.category === udemyCat;
+    // Only show Udemy courses for subjects the user hasn't selected yet (gap-filling)
+    // If no courses selected at all, show everything so the page isn't empty
+    const isGap = count === 0 || !selected[u.relatedCode];
+    return catMatch && isGap;
+  });
+
+  const toggle = (code) => setSelected(p => { if (p[code]) { const n = { ...p }; delete n[code]; return n; } return { ...p, [code]: "Intermediate" }; });
+  const setProf = (code, prof) => setSelected(p => ({ ...p, [code]: prof }));
+
+  const navItems = [
+    { id: "courses", label: "Courses", badge: count || null },
+    { id: "skills", label: "Skills" },
+    { id: "roles", label: "Roles", badge: strong.length + eligible.length || null },
+    { id: "jobs", label: "Jobs", badge: filteredJobs.length || null },
+    { id: "udemy", label: "Udemy" },
+  ];
+
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#fff;}
+    ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-thumb{background:${T.border};border-radius:2px;}::-webkit-scrollbar-track{background:transparent;}
+    ::placeholder{color:${T.textMuted};}
+    input:focus{outline:none;}
+    .cc{transition:border-color .14s,box-shadow .14s,transform .14s;}.cc:hover{border-color:${T.accentBorder}!important;box-shadow:0 2px 14px rgba(139,92,246,0.09)!important;transform:translateY(-1px);}
+    .jc{transition:border-color .14s,box-shadow .14s,transform .14s;}.jc:hover{border-color:${T.borderStrong}!important;box-shadow:0 4px 20px rgba(0,0,0,0.06)!important;transform:translateY(-1px);}
+    .rc{transition:border-color .14s,box-shadow .14s,transform .14s;}.rc:hover{border-color:${T.accentBorder}!important;box-shadow:0 4px 20px rgba(139,92,246,0.08)!important;transform:translateY(-1px);}
+    .uc{transition:border-color .14s,box-shadow .14s,transform .14s;}.uc:hover{border-color:${T.accentBorder}!important;box-shadow:0 4px 20px rgba(139,92,246,0.09)!important;transform:translateY(-2px);}
+    .cp{transition:border-color .12s,background .12s,color .12s;}.cp:hover{border-color:${T.accentBorder}!important;color:${T.accent}!important;background:${T.accentSoft}!important;}
+    .pb{transition:all .1s;}.pb:hover{opacity:.8;}
+    .ab{transition:background .12s,color .12s,border-color .12s;}.ab:hover{background:${T.accent}!important;color:#fff!important;border-color:${T.accent}!important;}
+    .nb{transition:color .12s;}.nb:hover{color:${T.accent}!important;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}.fu{animation:fadeUp .28s ease forwards;}
+    @keyframes barGrow{from{width:0;}to{width:var(--w);}}.bf{animation:barGrow .7s cubic-bezier(.4,0,.2,1) .05s forwards;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(6px);}}
+  `;
+
+  if (!userName) return <LoginPage onLogin={(n, liProfile) => { setUserName(n); if (liProfile) setLinkedIn(liProfile); }} />;
+
+  return (
+    <div style={{ minHeight: "100vh", background: T.bg, fontFamily: "'Sora',sans-serif", color: T.text, opacity: mounted ? 1 : 0, transition: "opacity 0.3s" }}>
+      <style>{css}</style>
+
+      {/* HEADER */}
+      <header style={{ background: "#fff", borderBottom: `1px solid #E8E8EC`, position: "sticky", top: 0, zIndex: 200 }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 2rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
+          {/* Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setTab("courses")}>
+            <div style={{ width: 28, height: 28, background: "#1A1825", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M9 1.5L16.5 5.5V12.5L9 16.5L1.5 12.5V5.5L9 1.5Z" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.4" /><path d="M9 5L13 7.5V10.5L9 13L5 10.5V7.5L9 5Z" fill="white" /></svg>
+            </div>
+            <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: "-0.03em", color: "#1A1825" }}>VCCIS</span>
+          </div>
+
+          {/* Nav tabs - centered */}
+          <nav style={{ display: "flex", gap: 2 }}>
+            {navItems.map((n) => {
+              const active = tab === n.id;
+              return (
+                <button key={n.id} className="nb" onClick={() => setTab(n.id)} style={{ padding: "6px 14px", height: 36, fontSize: 13, fontWeight: active ? 600 : 400, fontFamily: "'Sora',sans-serif", border: `1px solid ${active ? "#1A1825" : "transparent"}`, borderRadius: 6, background: active ? "#1A1825" : "transparent", color: active ? "#fff" : "#6B6780", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all .12s" }}>
+                  {n.label}
+                  {n.badge != null && <span style={{ background: active ? "rgba(255,255,255,0.2)" : T.surface2, color: active ? "#fff" : T.textMuted, fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 3, fontFamily: "'DM Mono',monospace" }}>{n.badge}</span>}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Right side */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {linkedIn ? (
+              <a href={linkedIn.profileUrl} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none", padding: "5px 10px", border: "1px solid #E8E8EC", borderRadius: 6 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                <span style={{ fontSize: 12, color: "#0A66C2", fontWeight: 600 }}>{linkedIn.name.split(" ")[0]}</span>
+                <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ADE80" }} />
+              </a>
+            ) : (
+              <button onClick={() => setLiModal(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: "#0A66C2", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                Connect LinkedIn
+              </button>
+            )}
+            {count > 0 && <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: T.textMuted, padding: "4px 8px", background: T.surface, borderRadius: 4, border: `1px solid ${T.border}` }}><span style={{ color: T.accent, fontWeight: 600 }}>{count}</span> courses</div>}
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#1A1825", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff" }}>{userName[0].toUpperCase()}</div>
+          </div>
+        </div>
+      </header>
+
+      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "2.5rem 2rem 8rem" }}>
+
+        {/* COURSES */}
+        {tab === "courses" && (
+          <div className="fu">
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>01 — Your learning</div>
+              <h1 style={{ fontWeight: 800, fontSize: 34, letterSpacing: "-0.04em", color: T.text, lineHeight: 1.05, marginBottom: 6 }}>Select your courses</h1>
+              <p style={{ fontSize: 14, color: T.textSub }}>Check off completed subjects and set your proficiency level. Every course unlocks skills and career paths.</p>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: "1.5rem", flexWrap: "wrap" }}>
+              <div style={{ position: "relative", flex: "1 1 200px", maxWidth: 320 }}>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search courses…" style={{ width: "100%", padding: "9px 12px 9px 36px", border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 13, fontFamily: "'Sora',sans-serif", color: T.text, background: T.bg }} />
+                <svg style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }} width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke={T.textMuted} strokeWidth="1.2" /><path d="M9.5 9.5L12 12" stroke={T.textMuted} strokeWidth="1.2" strokeLinecap="round" /></svg>
+              </div>
+              {CATEGORIES.map(c => (
+                <button key={c} className="cp" onClick={() => setCat(c)} style={{ padding: "7px 14px", borderRadius: 6, fontSize: 12.5, fontWeight: cat === c ? 600 : 400, border: `1px solid ${cat === c ? T.accentBorder : T.border}`, background: cat === c ? T.accentSoft : T.bg, color: cat === c ? T.accent : T.textSub, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>{c}</button>
+              ))}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(340px,1fr))", gap: 10 }}>
+              {filtered.map((c, i) => {
+                const on = !!selected[c.code];
+                const prof = selected[c.code] || "Intermediate";
+                const pc = PC[prof];
+                return (
+                  <div key={c.code} className="cc" style={{ background: on ? T.accentSoft : T.bg, border: `1px solid ${on ? T.accentBorder : T.border}`, borderRadius: 8, padding: "1rem 1.1rem", display: "flex", gap: 10, alignItems: "flex-start", animation: `fadeUp .22s ease ${i * .025}s both` }}>
+                    <button onClick={() => toggle(c.code)} style={{ width: 20, height: 20, flexShrink: 0, borderRadius: 4, border: `1.5px solid ${on ? T.accent : T.border}`, background: on ? T.accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", marginTop: 2 }}>
+                      {on && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 3.5L4 6.5L9 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                    </button>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13.5, color: T.text, letterSpacing: "-0.01em", lineHeight: 1.3 }}>{c.name}</div>
+                          <div style={{ fontSize: 10.5, color: T.textMuted, fontFamily: "'DM Mono',monospace", marginTop: 2 }}>{c.code}</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 3, flexShrink: 0, background: (CAT_ACCENT[c.category] || T.accent) + "15", color: CAT_ACCENT[c.category] || T.accent, border: `1px solid ${(CAT_ACCENT[c.category] || T.accent)}30` }}>{c.category}</span>
+                      </div>
+                      {on && (
+                        <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+                          {PROFICIENCY.map(p => (
+                            <button key={p} onClick={() => setProf(c.code, p)} className="pb" style={{ fontSize: 10.5, padding: "3px 10px", borderRadius: 3, fontFamily: "'Sora',sans-serif", fontWeight: prof === p ? 600 : 400, border: `1px solid ${prof === p ? PC[p].border : T.border}`, background: prof === p ? PC[p].bg : "transparent", color: prof === p ? PC[p].text : T.textMuted, cursor: "pointer" }}>{p}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {filtered.length === 0 && <EmptyState msg="No courses match your search." />}
+          </div>
+        )}
+
+        {/* SKILLS */}
+        {tab === "skills" && (
+          <div className="fu">
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>02 — Skills profile</div>
+              <h1 style={{ fontWeight: 800, fontSize: 34, letterSpacing: "-0.04em", color: T.text, marginBottom: 6 }}>Your skill profile</h1>
+              <p style={{ fontSize: 14, color: T.textSub }}>{skills.length > 0 ? `${skills.length} skills unlocked across ${count} courses — proficiency based on your self-assessment.` : "Select courses above to see which skills you're building."}</p>
+            </div>
+            {skills.length === 0 ? <EmptyState msg="Add courses to see your skills." btnLabel="Select courses" btnTab="courses" onTabChange={setTab} /> : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 10 }}>
+                {skills.map(([skill, strength], i) => {
+                  const lvl = strength >= 0.9 ? "Advanced" : strength >= 0.65 ? "Intermediate" : "Beginner";
+                  const bc = strength >= 0.9 ? T.green : strength >= 0.65 ? T.accent : T.amber;
+                  const pc2 = strength >= 0.9 ? PC.Advanced : strength >= 0.65 ? PC.Intermediate : PC.Beginner;
+                  return (
+                    <div key={skill} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "1.1rem 1.2rem", animation: `fadeUp .22s ease ${i * .04}s both` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <span style={{ fontWeight: 600, fontSize: 14, color: T.text, letterSpacing: "-0.01em" }}>{skill}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 9px", borderRadius: 3, background: pc2.bg, color: pc2.text, border: `1px solid ${pc2.border}` }}>{lvl}</span>
+                      </div>
+                      <div style={{ height: 5, background: T.surface2, borderRadius: 3, overflow: "hidden" }}>
+                        <div className="bf" style={{ "--w": `${Math.round(strength * 100)}%`, height: "100%", width: 0, background: `linear-gradient(90deg,${bc},${bc}88)`, borderRadius: 3 }} />
+                      </div>
+                      <div style={{ fontSize: 10, color: T.textMuted, marginTop: 6, fontFamily: "'DM Mono',monospace" }}>{Math.round(strength * 100)}% proficiency</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ROLES */}
+        {tab === "roles" && (
+          <div className="fu">
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>03 — Career matching</div>
+              <h1 style={{ fontWeight: 800, fontSize: 34, letterSpacing: "-0.04em", color: T.text, marginBottom: 6 }}>Career matches</h1>
+              <p style={{ fontSize: 14, color: T.textSub }}>{strong.length + eligible.length > 0 ? `${strong.length} strong matches, ${eligible.length} within reach — based on your ${count} selected courses.` : "Add more courses to see which career paths open up."}</p>
+            </div>
+            {strong.length > 0 && (
+              <>
+                <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.green, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>✓ Strong Matches</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(340px,1fr))", gap: 10, marginBottom: "2rem" }}>
+                  {strong.map((role, i) => (
+                    <div key={role.id} className="rc" style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "1.25rem", animation: `fadeUp .25s ease ${i * .05}s both` }}>
+                      <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "flex-start" }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 10, background: `${role.color}15`, border: `1px solid ${role.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: role.color, flexShrink: 0 }}>{role.symbol}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: T.text, letterSpacing: "-0.02em" }}>{role.title}</div>
+                          <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{role.salary} · {role.demand} demand</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontWeight: 800, fontSize: 28, color: role.color, letterSpacing: "-0.04em" }}>{role.score}%</div>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12.5, color: T.textSub, lineHeight: 1.6, marginBottom: 10 }}>{role.description}</p>
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                        {role.skills.map(s => <span key={s} style={{ fontSize: 10.5, padding: "2px 8px", borderRadius: 3, background: T.surface2, color: T.textSub, border: `1px solid ${T.border}` }}>{s}</span>)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {eligible.length > 0 && (
+              <>
+                <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.amber, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>◎ Close Matches</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(340px,1fr))", gap: 10 }}>
+                  {eligible.map((role, i) => (
+                    <div key={role.id} className="rc" style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "1.25rem", animation: `fadeUp .25s ease ${i * .05}s both`, opacity: 0.85 }}>
+                      <div style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "flex-start" }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 8, background: `${role.color}10`, border: `1px solid ${role.color}25`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: role.color, flexShrink: 0 }}>{role.symbol}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: T.text }}>{role.title}</div>
+                          <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{role.salary}</div>
+                        </div>
+                        <div style={{ fontWeight: 800, fontSize: 22, color: T.amber }}>{role.score}%</div>
+                      </div>
+                      {gaps[role.id]?.missing?.length > 0 && (
+                        <div style={{ fontSize: 11, color: T.amber, background: T.amberSoft, border: `1px solid ${T.amberBorder}`, borderRadius: 4, padding: "6px 10px" }}>
+                          Missing: {gaps[role.id].missing.join(", ")}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {strong.length === 0 && eligible.length === 0 && <EmptyState onTabChange={setTab} msg="Add more courses to unlock recommendations." />}
+          </div>
+        )}
+
+        {/* JOBS */}
+        {tab === "jobs" && (
+          <div className="fu">
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>04 — Opportunities 🇮🇳</div>
+              <h1 style={{ fontWeight: 800, fontSize: 36, letterSpacing: "-0.04em", color: T.text, marginBottom: 6 }}>India Job Board</h1>
+              <p style={{ fontSize: 14, color: T.textSub }}>{eligibleIds.length > 0 ? `${filteredJobs.length} listings matched to your ${eligibleIds.length} eligible roles — expand any card to apply directly on LinkedIn.` : "All available positions — expand a card to see requirements and apply on LinkedIn."}</p>
+            </div>
+            <div style={{ display: "flex", gap: 4, marginBottom: "1.5rem", alignItems: "center" }}>{["All", "Full-time", "Internship"].map(f => (<button key={f} onClick={() => setJobFilter(f)} style={{ padding: "7px 16px", borderRadius: 4, fontSize: 12.5, fontWeight: jobFilter === f ? 600 : 400, border: `1px solid ${jobFilter === f ? T.accentBorder : T.border}`, background: jobFilter === f ? T.accentSoft : T.bg, color: jobFilter === f ? T.accent : T.textSub, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>{f}</button>))}<span style={{ marginLeft: "auto", fontSize: 10, color: T.textMuted, fontFamily: "'DM Mono',monospace", letterSpacing: "0.08em" }}>{filteredJobs.length} LISTINGS</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{filteredJobs.map((job, i) => {
+              const expanded = jobExpand === job.id;
+              return (
+                <div key={job.id} className="jc" style={{ background: T.bg, border: `1px solid ${expanded ? T.accentBorder : T.border}`, borderRadius: 8, overflow: "hidden", animation: `fadeUp .25s ease ${i * .04}s both`, transition: "border-color .15s" }}>
+                  {/* Card header – always visible */}
+                  <div onClick={() => setJobExpand(expanded ? null : job.id)} style={{ padding: "1.1rem 1.25rem", cursor: "pointer", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 8, background: `${job.color}18`, border: `1px solid ${job.color}33`, color: job.color, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, flexShrink: 0 }}>{job.logo}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: T.text, marginBottom: 2, letterSpacing: "-0.01em" }}>{job.title}</div>
+                      <div style={{ fontSize: 12, color: T.textMuted }}>{job.company} · {job.location}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: T.text, fontFamily: "'DM Mono',monospace" }}>{job.tc}</div>
+                        <div style={{ fontSize: 10, color: T.textMuted, marginTop: 1 }}>{job.posted}</div>
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 3, background: job.type === "Internship" ? T.accentSoft : T.greenSoft, color: job.type === "Internship" ? T.accent : T.green, border: `1px solid ${job.type === "Internship" ? T.accentBorder : T.greenBorder}` }}>{job.type}</span>
+                      <span style={{ fontSize: 14, color: T.textMuted, transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
+                    </div>
+                  </div>
+                  {/* Expanded detail */}
+                  {expanded && (
+                    <div style={{ borderTop: `1px solid ${T.border}`, padding: "1.1rem 1.25rem", background: T.surface }}>
+                      <p style={{ fontSize: 13, color: T.textSub, lineHeight: 1.7, marginBottom: 14 }}>{job.description}</p>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                        <div>
+                          <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Skills needed</div>
+                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                            {job.skills.map(s => <span key={s} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 3, background: T.accentSoft, color: T.accent, border: `1px solid ${T.accentBorder}`, fontWeight: 500 }}>{s}</span>)}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>What to do</div>
+                          <ol style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 5 }}>
+                            {job.whatToDo.map((step, si) => <li key={si} style={{ fontSize: 12, color: T.textSub, lineHeight: 1.5 }}>{step}</li>)}
+                          </ol>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <a href={job.applyLink} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, fontWeight: 700, color: "#fff", background: "#0A66C2", border: "none", borderRadius: 6, padding: "8px 18px", cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center", gap: 6, fontFamily: "'Sora',sans-serif" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                          Apply on LinkedIn ↗
+                        </a>
+                        <span style={{ fontSize: 11, color: T.textMuted }}>Roles: {job.roles.map(rid => ROLES.find(x=>x.id===rid)?.title).filter(Boolean).join(", ")}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}</div>
+            {filteredJobs.length === 0 && <EmptyState onTabChange={setTab} msg="No jobs match your filters." />}
+          </div>
+        )}
+
+        {/* UDEMY */}
+        {tab === "udemy" && (
+          <div className="fu">
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ fontSize: 10, fontFamily: "'DM Mono',monospace", color: T.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>05 — Fill the gaps</div>
+              <h1 style={{ fontWeight: 800, fontSize: 36, letterSpacing: "-0.04em", color: T.text, marginBottom: 6 }}>Courses you're missing</h1>
+              <p style={{ fontSize: 14, color: T.textSub }}>{count > 0 ? `Subjects not covered by your selected courses. ${filteredUdemy.length} gap${filteredUdemy.length !== 1 ? "s" : ""} found — fill them on Udemy.` : "Select your completed courses first — then we'll show what you're missing."}</p>
+            </div>
+            <div style={{ display: "flex", gap: 4, marginBottom: "1.5rem", flexWrap: "wrap" }}>
+              {CATEGORIES.map(c => (<button key={c} className="cp" onClick={() => setUdemyCat(c)} style={{ padding: "6px 13px", borderRadius: 4, fontSize: 12, fontWeight: udemyCat === c ? 600 : 400, border: `1px solid ${udemyCat === c ? T.accentBorder : T.border}`, background: udemyCat === c ? T.accentSoft : T.bg, color: udemyCat === c ? T.accent : T.textSub, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>{c}</button>))}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 12 }}>
+              {filteredUdemy.map((course, i) => (
+                <div key={course.id} className="uc" style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, overflow: "hidden", animation: `fadeUp .25s ease ${i * .05}s both`, display: "flex", flexDirection: "column" }}>
+                  <div style={{ height: 4, background: `linear-gradient(90deg,${course.color},${course.color}88)` }} />
+                  <div style={{ padding: "1.25rem", flex: 1, display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                      {course.badge && <span style={{ fontSize: 10, fontWeight: 700, background: "#FEF9C3", color: "#92400E", padding: "2px 8px", borderRadius: 3, border: "1px solid #FDE68A" }}>{course.badge}</span>}
+                      <span style={{ fontSize: 10, fontWeight: 500, background: T.surface2, color: T.textSub, padding: "2px 8px", borderRadius: 3, border: `1px solid ${T.border}` }}>{course.level}</span>
+                      <span style={{ fontSize: 10, fontWeight: 500, background: T.surface2, color: T.textSub, padding: "2px 8px", borderRadius: 3, border: `1px solid ${T.border}` }}>{course.hours}h</span>
+                      {count > 0 && <span style={{ fontSize: 10, fontWeight: 600, background: "#FFF7ED", color: "#C2410C", padding: "2px 8px", borderRadius: 3, border: "1px solid #FED7AA" }}>Not in your courses</span>}
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 14.5, color: T.text, lineHeight: 1.35, marginBottom: 6, letterSpacing: "-0.01em" }}>{course.title}</div>
+                    <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 10 }}>{course.instructor}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: "auto", paddingBottom: 14 }}>
+                      <StarRating rating={course.rating} />
+                      <span style={{ fontSize: 11, color: T.textMuted }}>({course.reviews} ratings)</span>
+                    </div>
+                    <div style={{ paddingTop: 12, borderTop: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div>
+                        <span style={{ fontWeight: 800, fontSize: 18, color: T.text, letterSpacing: "-0.02em" }}>{course.price}</span>
+                        <span style={{ fontSize: 12, color: T.textMuted, textDecoration: "line-through", marginLeft: 6 }}>{course.originalPrice}</span>
+                      </div>
+                      <a href={course.link} target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 600, color: "#fff", background: "#E05936", border: "none", borderRadius: 4, padding: "7px 16px", cursor: "pointer", textDecoration: "none", fontFamily: "'Sora',sans-serif" }}>Enrol ↗</a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {filteredUdemy.length === 0 && count > 0 && (
+              <div style={{ textAlign: "center", padding: "4rem 2rem", background: T.greenSoft, border: `1px solid ${T.greenBorder}`, borderRadius: 12 }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>🎉</div>
+                <div style={{ fontWeight: 700, color: T.green, fontSize: 18, marginBottom: 8 }}>You've covered everything!</div>
+                <div style={{ fontSize: 13, color: T.textSub }}>Your selected courses cover all the Udemy topics we track. No gaps in this category.</div>
+              </div>
+            )}
+            {filteredUdemy.length === 0 && count === 0 && <EmptyState msg="Select your completed courses first." btnLabel="Go to Courses" btnTab="courses" onTabChange={setTab} />}
+          </div>
+        )}
+      </main>
+
+      {/* LINKEDIN CONNECT MODAL */}
+      {liModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => { setLiModal(false); setLiPhase2("idle"); setLiEmail2(""); }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: "2rem", width: "100%", maxWidth: 420, boxShadow: "0 24px 80px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+              <div style={{ width: 36, height: 36, background: "#0A66C2", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: T.text }}>Connect LinkedIn</div>
+                <div style={{ fontSize: 11, color: T.textMuted }}>Paste your real profile URL</div>
+              </div>
+              <button onClick={() => { setLiModal(false); setLiPhase2("idle"); setLiEmail2(""); }} style={{ marginLeft: "auto", background: "none", border: "none", fontSize: 20, color: T.textMuted, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </div>
+            {liPhase2 === "idle" && (
+              <>
+                <p style={{ fontSize: 13, color: T.textSub, lineHeight: 1.6, marginBottom: 16 }}>Enter your LinkedIn profile URL. The "Apply on LinkedIn" buttons in the job board will open your actual profile.</p>
+                <label style={{ fontSize: 11, fontWeight: 600, color: T.textSub, display: "block", marginBottom: 6, letterSpacing: "0.05em" }}>YOUR LINKEDIN URL</label>
+                <input
+                  value={liEmail2}
+                  onChange={e => setLiEmail2(e.target.value)}
+                  placeholder="linkedin.com/in/your-name"
+                  onKeyDown={e => { if (e.key === "Enter") {
+                    const slug = parseLinkedInUrl(liEmail2);
+                    if (!slug) return;
+                    setLiPhase2("loading");
+                    window.open(`https://www.linkedin.com/in/${slug}`, "_blank", "noopener");
+                    setTimeout(() => {
+                      setLinkedIn({ name: slugToName(slug), slug, headline: "Computer Science Student at VIT University", location: "Vellore, Tamil Nadu, India", profileUrl: `https://www.linkedin.com/in/${slug}` });
+                      setLiPhase2("done");
+                      setTimeout(() => { setLiModal(false); setLiPhase2("idle"); setLiEmail2(""); }, 900);
+                    }, 1400);
+                  }}}
+                  style={{ width: "100%", padding: "10px 12px", border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 13, fontFamily: "'Sora',sans-serif", color: T.text, marginBottom: 12, outline: "none", boxSizing: "border-box" }}
+                  onFocus={e => e.target.style.borderColor="#0A66C2"}
+                  onBlur={e => e.target.style.borderColor=T.border}
+                />
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", background: "#F0F9FF", borderRadius: 6, border: "1px solid #BAE6FD", marginBottom: 16 }}>
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="#0284C7" style={{ flexShrink: 0, marginTop: 1 }}><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 3a1 1 0 110 2 1 1 0 010-2zm-1 4h2v5H9V9z"/></svg>
+                  <span style={{ fontSize: 11, color: "#0284C7", lineHeight: 1.5 }}>We only use your URL — no passwords, no API access. Your profile opens in a new tab so you can verify.</span>
+                </div>
+                <button onClick={() => {
+                  const slug = parseLinkedInUrl(liEmail2);
+                  if (!slug) return;
+                  setLiPhase2("loading");
+                  window.open(`https://www.linkedin.com/in/${slug}`, "_blank", "noopener");
+                  setTimeout(() => {
+                    setLinkedIn({ name: slugToName(slug), slug, headline: "Computer Science Student at VIT University", location: "Vellore, Tamil Nadu, India", profileUrl: `https://www.linkedin.com/in/${slug}` });
+                    setLiPhase2("done");
+                    setTimeout(() => { setLiModal(false); setLiPhase2("idle"); setLiEmail2(""); }, 900);
+                  }, 1400);
+                }} style={{ width: "100%", padding: "11px", background: "#0A66C2", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>Connect & Open Profile ↗</button>
+              </>
+            )}
+            {liPhase2 === "loading" && <div style={{ textAlign: "center", padding: "2rem 0" }}><div style={{ width: 40, height: 40, border: "3px solid #DBEAFE", borderTopColor: "#0A66C2", borderRadius: "50%", margin: "0 auto 14px", animation: "spin 0.8s linear infinite" }} /><div style={{ fontSize: 13, color: T.textSub }}>Connecting… your LinkedIn is opening in a new tab</div></div>}
+            {liPhase2 === "done" && <div style={{ textAlign: "center", padding: "2rem 0" }}><div style={{ fontSize: 32, marginBottom: 10 }}>✅</div><div style={{ fontWeight: 700, color: T.text, fontSize: 16 }}>Connected!</div></div>}
+          </div>
+        </div>
+      )}
+
+      {/* STATUS BAR */}
+      {count > 0 && (
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(255,255,255,0.97)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: `1px solid #E8E8EC`, padding: "10px 2rem" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", gap: 20 }}>
+              {[{ val: count, lbl: "courses", c: T.accent }, { val: skills.length, lbl: "skills", c: "#0EA5E9" }, { val: strong.length, lbl: "strong matches", c: T.green }, { val: filteredJobs.length, lbl: "jobs", c: "#6B7280" }].map(({ val, lbl, c }) => (
+                <span key={lbl} style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "'DM Mono',monospace" }}>
+                  <span style={{ color: c, fontWeight: 600 }}>{val}</span> {lbl}
+                </span>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[{ id: "roles", label: "Roles" }, { id: "jobs", label: "Jobs" }, { id: "udemy", label: "Fill gaps" }].map(t => (
+                <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "5px 12px", fontSize: 11, fontWeight: 600, background: tab === t.id ? "#1A1825" : T.surface, color: tab === t.id ? "#fff" : T.textSub, border: `1px solid ${tab === t.id ? "#1A1825" : T.border}`, borderRadius: 4, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}>{t.label} →</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
