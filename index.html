@@ -1,4 +1,19 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VCCIS — Course to Career</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #fff; }</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect, useRef, useCallback } = React;
+
 
 /* ─────────────────────────── DATA ─────────────────────────── */
 const COURSES = [
@@ -788,7 +803,7 @@ function HomePage({ userName, selected, strong, eligible, skills, filteredJobs, 
 }
 
 /* ─────────────────────────── MAIN APP ─────────────────────────── */
-export default function App() {
+function App() {
   const [userName, setUserName] = useState(null);
   const [selected, setSelected] = useState({});
   const [tab, setTab] = useState("courses");
@@ -1310,3 +1325,8 @@ export default function App() {
     </div>
   );
 }
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
