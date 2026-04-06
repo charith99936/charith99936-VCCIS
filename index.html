@@ -4,15 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VCCIS — Course to Career</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>* { box-sizing: border-box; margin: 0; padding: 0; } body { background: #fff; }</style>
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel">
-    const { useState, useMemo, useEffect, useRef, useCallback } = React;
+  <script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect, useRef, useCallback } = React;
+
 
 
 /* ─────────────────────────── DATA ─────────────────────────── */
@@ -1259,8 +1260,8 @@ function App() {
     </div>
   );
 }
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
 </html>
